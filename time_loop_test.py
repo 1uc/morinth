@@ -36,3 +36,4 @@ def test_sine_wave(grid, single_step):
     uT = simulation(u0, T);
 
     assert np.all(np.isfinite(uT))
+    assert False
