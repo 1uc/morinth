@@ -16,8 +16,6 @@ class ForwardEuler(TimeIntegration):
         self.cfl_number = 0.45
 
     def __call__(self, u0, t, dt):
-        n_ghost = self.grid.n_ghost
-
         u1 = u0 + dt*self.rate_of_change(u0, t)
         self.bc(u1)
 
