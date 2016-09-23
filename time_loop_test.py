@@ -27,10 +27,12 @@ def single_step(grid, model):
     return ForwardEuler(grid, bc, fvm)
 
 def test_sine_wave(grid, single_step):
-    visualize = SimpleGraph(grid, "burgers_test")
+    visualize = lambda u : None
     simulation = TimeLoop(single_step, visualize)
 
     u0 = np.cos(2*np.pi*grid.cell_centers.reshape((-1, 1, 1)))
 
     T = 0.3
     uT = simulation(u0, T);
+
+    assert np.all(np.isfinite(uT))
