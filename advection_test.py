@@ -7,7 +7,7 @@ from boundary_conditions import Periodic
 from finite_volume_fluxes import FiniteVolumeFluxesO1
 from time_integration import ForwardEuler
 from time_loop import TimeLoop
-from visualize import SimpleGraph
+from visualize import SimpleColormap
 
 import pytest
 
@@ -27,7 +27,7 @@ def single_step(grid, model):
     return ForwardEuler(grid, bc, fvm)
 
 def test_advection(grid, single_step):
-    visualize = SimpleGraph(grid, "advection_test")
+    visualize = SimpleColormap(grid, "advection_test")
     simulation = TimeLoop(single_step, visualize)
 
     shape = grid.cell_centers.shape[:2] + (1,)
