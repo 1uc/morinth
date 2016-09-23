@@ -15,12 +15,12 @@ class SimpleGraph(SimplePlotting):
     def __call__(self, u):
         plt.plot(self.grid.cell_centers, u[:,:,0])
 
-        plt.savefig(self.file_name())
+        # plt.savefig(self.file_name())
         self.n_plots += 1
 
 class SimpleColormap(SimplePlotting):
     def __call__(self, u):
         plt.contourf(self.grid.X, self.grid.Y, u[:,:,0])
 
-        plt.savefig(self.file_name())
+        # plt.savefig(self.file_name())
         self.n_plots += 1
