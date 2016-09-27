@@ -5,7 +5,7 @@ from rusanov import Rusanov
 from grid import Grid
 from boundary_conditions import Periodic
 from finite_volume_fluxes import FiniteVolumeFluxesO1
-from time_integration import ForwardEuler
+from time_integration import ForwardEuler, BackwardEuler
 from time_loop import TimeLoop
 
 
@@ -31,8 +31,10 @@ class MockROC(object):
 def test_mock_ode():
     mock_roc = MockROC()
     forward_euler = ForwardEuler(lambda x: None, mock_roc)
-    solvers = [forward_euler]
-    tolerances = [0.01]
+    backward_euler = BackwardEuler(lambda x: None, mock_roc)
+    backward_euler.cfl_number = forward_euler.cfl_number
+    solvers = [forward_euler, backward_euler]
+    tolerances = [0.01, 0.01]
 
     T = 1.0
 
