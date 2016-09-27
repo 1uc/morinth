@@ -7,6 +7,7 @@ from boundary_conditions import Periodic
 from finite_volume_fluxes import FiniteVolumeFluxesO1
 from time_integration import ForwardEuler, BackwardEuler
 from time_loop import TimeLoop
+from time_keeper import FixedDuration, PlotNever
 
 
 def test_forward_euler_init():
@@ -31,17 +32,21 @@ class MockROC(object):
 def test_mock_ode():
     mock_roc = MockROC()
     forward_euler = ForwardEuler(lambda x: None, mock_roc)
-    backward_euler = BackwardEuler(lambda x: None, mock_roc)
+    backward_euler = BackwardEuler(lambda x: None, mock_roc, np.array([True]))
     backward_euler.cfl_number = forward_euler.cfl_number
-    solvers = [forward_euler, backward_euler]
+    solvers = [backward_euler]
     tolerances = [0.01, 0.01]
 
     T = 1.0
 
     for single_step, tol in zip(solvers, tolerances):
-        time_loop = TimeLoop(single_step, lambda x: None)
+        plotting_steps = PlotNever()
+        time_loop = TimeLoop(single_step, lambda x: None, plotting_steps)
 
         u0 = np.array([1.0]).reshape((1, 1, 1))
-        uT = time_loop(u0, T)
+        uT = time_loop(u0, FixedDuration(T))
 
         assert np.all(np.abs(uT - u0*np.exp(T)) < tol)
+
+if __name__ == '__main__':
+    test_mock_ode()

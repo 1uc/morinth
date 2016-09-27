@@ -1,6 +1,6 @@
 import numpy as np
 
-from jacobian import ApproximateJacobian, approximate_jacobian
+from jacobian import ApproximateJacobian
 
 class MockODE(object):
     def __init__(self):
@@ -14,7 +14,7 @@ def test_fintie_difference():
     ode = MockODE()
     epsilon, f, jac, x = ode.epsilon, ode.f, ode.jac, ode.x
     ajac = ApproximateJacobian(f, x, epsilon)
-    ojac = approximate_jacobian(f, x, epsilon)
+    ojac = ajac.as_operator()
 
     v = np.random.random((2,))
     dfdv = np.matmul(jac(x),v)

@@ -6,6 +6,7 @@ class SimplePlotting(object):
         self.grid = grid
         self.base_name = base_name
         self.n_plots = 0
+        plt.clf()
 
     def __call__(self, u):
         self.plot(u)

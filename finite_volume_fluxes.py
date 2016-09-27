@@ -10,7 +10,7 @@ class FiniteVolumeFluxesO1(object):
 
     def __call__(self, u, t):
         """Compute the rate of change 'dudt' due to FVM."""
-        dudt = np.empty_like(u)
+        dudt = np.zeros_like(u)
         dudt[1:-1,:,:] = self.x_flux(u, t)
 
         if self.grid.n_dims == 2:

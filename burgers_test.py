@@ -4,9 +4,10 @@ from rusanov import Rusanov
 from grid import Grid
 from boundary_conditions import Periodic
 from finite_volume_fluxes import FiniteVolumeFluxesO1
-from time_integration import ForwardEuler
+from time_integration import ForwardEuler, BackwardEuler
 from time_loop import TimeLoop
 from visualize import SimpleGraph
+from time_keeper import FixedDuration, PlotAtFixedInterval, PlotEveryNthStep
 
 import pytest
 
@@ -16,28 +17,29 @@ def test_burgers_eigenvalue():
 
     assert np.all(model.max_eigenvalue(u) >= 0.0)
 
-@pytest.fixture
-def grid():
-    return Grid([0.0, 1.0], 100, 1)
+class PDE(object):
+    def __init__(self):
+        self.grid = Grid([0.0, 1.0], 100, 1)
+        self.model = Burgers()
+        self.flux = Rusanov(self.model)
+        self.fvm = FiniteVolumeFluxesO1(self.grid, self.flux)
+        self.bc = Periodic(self.grid)
 
-@pytest.fixture
-def model():
-    return Burgers()
 
-@pytest.fixture
-def single_step(grid, model):
-    flux = Rusanov(model)
-    fvm = FiniteVolumeFluxesO1(grid, flux)
-    bc = Periodic(grid)
-    return ForwardEuler(bc, fvm)
+def test_burgers():
+    pde = PDE()
 
-def test_burgers(grid, single_step):
-    visualize = lambda u : None
-    simulation = TimeLoop(single_step, visualize)
-
-    u0 = np.cos(2*np.pi*grid.cell_centers.reshape((-1, 1, 1)))
+    forward_euler = ForwardEuler(pde.bc, pde.fvm)
+    backward_euler = BackwardEuler(pde.bc, pde.fvm, pde.grid.boundary_mask)
+    solvers = [backward_euler]
+    labels = ["backward_euler"]
 
     T = 0.3
-    uT = simulation(u0, T);
+    u0 = np.cos(2*np.pi*pde.grid.cell_centers.reshape((-1, 1, 1)))
+    for single_step, label in zip(solvers, labels):
+        visualize = lambda x: None
+        plotting_steps = PlotEveryNthStep(1)
+        simulation = TimeLoop(single_step, visualize, plotting_steps)
+        uT = simulation(u0, FixedDuration(T));
 
-    assert np.all(np.isfinite(uT))
+        assert np.all(np.isfinite(uT))

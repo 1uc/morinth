@@ -1,5 +1,5 @@
 import numpy as np
-from jacobian import approximate_jacobian
+from jacobian import ApproximateJacobian
 from newton import Newton
 
 class TimeIntegration(object):
@@ -26,15 +26,15 @@ class ForwardEuler(TimeIntegration):
         return self.cfl_number * self.rate_of_change.pick_time_step(u)
 
 class BackwardEuler(TimeIntegration):
-    def __init__(self, bc, rate_of_change):
+    def __init__(self, bc, rate_of_change, boundary_mask):
         super().__init__(bc, rate_of_change)
-        self.cfl_number = 10.0
+        self.cfl_number = 3.0
         self.epsilon = 1e-8
-        self.non_linear_solver = Newton()
+        self.non_linear_solver = Newton(boundary_mask)
 
     def __call__(self, u0, t, dt):
         F = self.NonlinearEquation(u0, t, dt, self.bc, self.rate_of_change)
-        dF = approximate_jacobian(F, u0, self.epsilon)
+        dF = ApproximateJacobian(F, u0, self.epsilon)
         u1 = self.non_linear_solver(F, dF, u0)
         self.bc(u1)
 
@@ -54,7 +54,7 @@ class BackwardEuler(TimeIntegration):
             u0, t, dt = self.u0, self.t, self.dt
             u = u.reshape(self.shape)
 
-            self.bc(u)
+            # self.bc(u)
             residual =  u - (u0 + dt*self.rate_of_change(u, t+dt))
             return residual.reshape((-1))
 

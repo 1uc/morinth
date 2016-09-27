@@ -10,6 +10,8 @@ class Grid(object):
         self.n_dims = self._domain.ndim
         self.n_ghost = n_ghost
 
+        self.make_boundary_mask()
+
         if self.n_dims == 1:
             self.make_1d_grid()
         elif self.n_dims == 2:
@@ -17,6 +19,22 @@ class Grid(object):
         else:
             raise Exception("Strange dimensions.")
 
+    def make_boundary_mask(self):
+        if isinstance(self._n_cells, int):
+            shape = (self._n_cells, 1, 1)
+        else:
+            shape = (self._n_cells[0], self._n_cells[1], 1)
+
+        n_ghost = self.n_ghost
+
+        mask = np.full(shape, True, dtype=bool)
+        mask[:n_ghost,:,:] = False
+        mask[-n_ghost:,:,:] = False
+        if len(shape) == 2:
+            mask[:,:n_ghost,:] = False
+            mask[:,-n_ghost:,:] = False
+
+        self.boundary_mask = mask
 
     def make_1d_grid(self):
         x = np.linspace(self._domain[0], self._domain[1], self._n_cells+1)

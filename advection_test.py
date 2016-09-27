@@ -7,6 +7,7 @@ from boundary_conditions import Periodic
 from finite_volume_fluxes import FiniteVolumeFluxesO1
 from time_integration import ForwardEuler
 from time_loop import TimeLoop
+from time_keeper import FixedDuration, PlotNever
 
 import pytest
 
@@ -22,15 +23,16 @@ def test_advection():
     pde = PDE()
 
     visualize = lambda u : None
+    plotting_steps = PlotNever()
     single_step = ForwardEuler(pde.bc, pde.fvm)
-    simulation = TimeLoop(single_step, visualize)
+    simulation = TimeLoop(single_step, visualize, plotting_steps)
 
     shape = pde.grid.cell_centers.shape[:2] + (1,)
     u0 = (np.cos(2*np.pi*pde.grid.cell_centers[:,:,0])
           * np.sin(2*np.pi*pde.grid.cell_centers[:,:,1])).reshape(shape)
 
-    T = 0.3
-    uT = simulation(u0, T);
+    time_keeper = FixedDuration(T = 0.3)
+    uT = simulation(u0, time_keeper);
 
     assert np.all(np.isfinite(uT))
 
