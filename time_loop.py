@@ -25,4 +25,4 @@ class TimeLoop(object):
 
     def pick_time_step(self, u, t, T):
         dt = self.single_step.pick_time_step(u)
-        return np.min(dt, T - t);
+        return min(dt, T - t);
