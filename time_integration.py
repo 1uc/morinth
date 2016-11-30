@@ -9,18 +9,8 @@ class TimeIntegration(object):
         self.bc = bc
         self.rate_of_change = rate_of_change
 
-class ForwardEuler(TimeIntegration):
-    """Simple forward Euler time-integration."""
-
-    def __init__(self, bc, rate_of_change):
-        super().__init__(bc, rate_of_change)
-        self.cfl_number = 0.45
-
-    def __call__(self, u0, t, dt):
-        u1 = u0 + dt*self.rate_of_change(u0, t)
-        self.bc(u1)
-
-        return u1
+class ExplicitTimeIntegration(TimeIntegration):
+    """Base class for explicit solvers."""
 
     def pick_time_step(self, u):
         return self.cfl_number * self.rate_of_change.pick_time_step(u)
@@ -65,7 +55,7 @@ class BackwardEuler(ImplicitTimeIntegration):
             return residual.reshape((-1))
 
 class BDF2(ImplicitTimeIntegration):
-    """Backward differentiation formula with stages `s=2`.
+    """Backward differentiation formula with two steps.
 
     The BDF2 is
         u2 - 4/3 u1 + 1/3 u0 = 2/3 h f(t2, u2).
