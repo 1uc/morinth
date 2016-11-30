@@ -5,7 +5,7 @@ from rusanov import Rusanov
 from grid import Grid
 from boundary_conditions import Periodic
 from finite_volume_fluxes import FiniteVolumeFluxesO1
-from time_integration import ForwardEuler, BackwardEuler
+from time_integration import ForwardEuler, BackwardEuler, BDF2
 from time_loop import TimeLoop
 from time_keeper import FixedDuration, PlotNever
 
@@ -33,9 +33,9 @@ def test_mock_ode():
     mock_roc = MockROC()
     forward_euler = ForwardEuler(lambda x: None, mock_roc)
     backward_euler = BackwardEuler(lambda x: None, mock_roc, np.array([True]))
-    backward_euler.cfl_number = forward_euler.cfl_number
-    solvers = [backward_euler]
-    tolerances = [0.01, 0.01]
+    bdf2 = BDF2(lambda x: None, mock_roc, np.array([True]), fixed_dt = 0.05)
+    solvers = [forward_euler, backward_euler, bdf2]
+    tolerances = [0.01, 0.05, 0.008]
 
     T = 1.0
 
