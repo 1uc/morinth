@@ -18,7 +18,7 @@ class ExplicitTimeIntegration(TimeIntegration):
 class ImplicitTimeIntegration(TimeIntegration):
     """Base class for implicit time integration."""
 
-    def __init(self, bc, rate_of_change, boundary_mask):
+    def __init__(self, bc, rate_of_change, boundary_mask):
         super().__init__(bc, rate_of_change)
         self.epsilon = 1e-8
         self.non_linear_solver = Newton(boundary_mask)

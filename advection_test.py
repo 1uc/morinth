@@ -5,7 +5,7 @@ from rusanov import Rusanov
 from grid import Grid
 from boundary_conditions import Periodic
 from finite_volume_fluxes import FiniteVolumeFluxesO1
-from time_integration import ForwardEuler
+from runge_kutta import ForwardEuler
 from time_loop import TimeLoop
 from time_keeper import FixedDuration, PlotNever
 
@@ -21,13 +21,13 @@ class PDE(object):
 
 def test_advection():
     pde = PDE()
+    shape = pde.grid.cell_centers.shape[:2] + (1,)
 
     visualize = lambda u : None
     plotting_steps = PlotNever()
-    single_step = ForwardEuler(pde.bc, pde.fvm)
+    single_step = ForwardEuler(pde.bc, pde.fvm, shape)
     simulation = TimeLoop(single_step, visualize, plotting_steps)
 
-    shape = pde.grid.cell_centers.shape[:2] + (1,)
     u0 = (np.cos(2*np.pi*pde.grid.cell_centers[:,:,0])
           * np.sin(2*np.pi*pde.grid.cell_centers[:,:,1])).reshape(shape)
 

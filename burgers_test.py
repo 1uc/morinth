@@ -4,7 +4,8 @@ from rusanov import Rusanov
 from grid import Grid
 from boundary_conditions import Periodic
 from finite_volume_fluxes import FiniteVolumeFluxesO1
-from time_integration import ForwardEuler, BackwardEuler
+from time_integration import BackwardEuler
+from runge_kutta import ForwardEuler
 from time_loop import TimeLoop
 from visualize import SimpleGraph
 from time_keeper import FixedDuration, PlotAtFixedInterval, PlotEveryNthStep
@@ -28,8 +29,9 @@ class PDE(object):
 
 def test_burgers():
     pde = PDE()
+    shape = pde.grid.cell_centers.reshape((-1, 1, 1)).shape
 
-    forward_euler = ForwardEuler(pde.bc, pde.fvm)
+    forward_euler = ForwardEuler(pde.bc, pde.fvm, shape)
     backward_euler = BackwardEuler(pde.bc, pde.fvm, pde.grid.boundary_mask)
     solvers = [backward_euler]
     labels = ["backward_euler"]
