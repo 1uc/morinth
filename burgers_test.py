@@ -29,10 +29,9 @@ class PDE(object):
 
 def test_burgers():
     pde = PDE()
-    shape = pde.grid.cell_centers.reshape((-1, 1, 1)).shape
 
-    forward_euler = ForwardEuler(pde.bc, pde.fvm, shape)
-    backward_euler = BackwardEuler(pde.bc, pde.fvm, pde.grid.boundary_mask)
+    forward_euler = ForwardEuler(pde.bc, pde.fvm)
+    backward_euler = BackwardEuler(pde.bc, pde.fvm, pde.grid.boundary_mask, cfl_number=3.0)
     solvers = [backward_euler]
     labels = ["backward_euler"]
 

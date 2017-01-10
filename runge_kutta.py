@@ -1,39 +1,27 @@
 import numpy as np
+
 from time_integration import ExplicitTimeIntegration
-
-class ButcherTableau(object):
-    def __init__(self, a, b):
-        self.a = a
-        self.b = b
-        self.c = np.sum(a, axis=1)
-        self.stages = a.shape[0]
-
-    def __repr__(self):
-        return "".join([type(self).__name__, "(",
-                        "a = ", repr(self.a), ", ",
-                        "b = ", repr(self.b), ", ",
-                        ")"])
-
-    def is_explicit(self):
-        """Does the tableau describe and explicit RK scheme?"""
-        for i in range(self.stages):
-            if not np.all(self.a[i,i:] == np.zeros((1, self.stages - i))):
-                return False
-
-        return True
-
-    def is_implicit(self):
-        return not self.is_explicit()
+from butcher import ButcherTableau
 
 class ExplicitRungeKutta(ExplicitTimeIntegration):
-    """Base class for explicit Runge-Kutta methods."""
+    """Base class for explicit Runge-Kutta methods.
 
-    def __init__(self, bc, rate_of_change, tableau, shape):
+    We write Runge-Kutta methods for du/dt = L(u, t) with s-stages as:
+        u[j] = u0 + dt_j * sum_i a[j,i] * k[j]
+        k[j] = L(u[j], t + c[j]*dt)
+
+        u1 = u0 + dt * sum_j b[j]*k[j]
+
+    """
+
+    def __init__(self, bc, rate_of_change, tableau):
         super().__init__(bc, rate_of_change)
         self.tableau = tableau
-        self.dudt_buffers = np.zeros(shape+(tableau.stages,))
+        self.dudt_buffers = None
 
     def __call__(self, u0, t, dt):
+        self.allocate_buffers(u0)
+
         k = self.dudt_buffers
 
         k[...,0] = self.rate_of_change(u0, t)
@@ -58,41 +46,47 @@ class ExplicitRungeKutta(ExplicitTimeIntegration):
         return "".join([type(self).__name__,
                         "(bc = ", repr(self.bc), ", ",
                         "rate_of_change = ", repr(self.rate_of_change), ", ",
-                        "tableau = ", repr(self.tableau), ", ",
-                        "shape = ", self.shape, ")"])
+                        "tableau = ", repr(self.tableau), ")"])
+
+
+    def allocate_buffers(self, u):
+        shape = u.shape+(self.tableau.stages,)
+
+        if self.dudt_buffers is None or self.dudt_buffers.shape != shape:
+            self.dudt_buffers = np.zeros(shape)
 
 
 class ForwardEuler(ExplicitRungeKutta):
     """Simple forward Euler time-integration."""
 
-    def __init__(self, bc, rate_of_change, shape):
+    def __init__(self, bc, rate_of_change):
         a = np.array([[0.0]])
         b = np.array([1.0])
 
-        super().__init__(bc, rate_of_change, ButcherTableau(a, b), shape)
+        super().__init__(bc, rate_of_change, ButcherTableau(a, b))
         self.cfl_number = 0.45
 
 
 class SSP2(ExplicitRungeKutta):
     """Second order strong stability preserving RK method."""
 
-    def __init__(self, bc, rate_of_change, shape):
+    def __init__(self, bc, rate_of_change):
         a = np.array([[0.0, 0.0],
                       [1.0, 0.0]])
         b = np.array([0.5, 0.5])
 
-        super().__init__(bc, rate_of_change, ButcherTableau(a, b), shape)
+        super().__init__(bc, rate_of_change, ButcherTableau(a, b))
         self.cfl_number = 0.85
 
 class SSP3(ExplicitRungeKutta):
     """Third order strong stability preserving RK method."""
 
-    def __init__(self, bc, rate_of_change, shape):
+    def __init__(self, bc, rate_of_change):
         a = np.array([[ 0.0,  0.0,  0.0],
                       [ 1.0,  0.0,  0.0],
                       [ 0.25, 0.25, 0.0]])
 
         b = np.array([1.0/6, 1.0/6, 2.0/3])
 
-        super().__init__(bc, rate_of_change, ButcherTableau(a, b), shape)
+        super().__init__(bc, rate_of_change, ButcherTableau(a, b))
         self.cfl_number = 0.85

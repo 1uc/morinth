@@ -21,13 +21,13 @@ class PDE(object):
 
 def test_advection():
     pde = PDE()
-    shape = pde.grid.cell_centers.shape[:2] + (1,)
 
     visualize = lambda u : None
     plotting_steps = PlotNever()
-    single_step = ForwardEuler(pde.bc, pde.fvm, shape)
+    single_step = ForwardEuler(pde.bc, pde.fvm)
     simulation = TimeLoop(single_step, visualize, plotting_steps)
 
+    shape = pde.grid.cell_centers.shape[:2] + (1,)
     u0 = (np.cos(2*np.pi*pde.grid.cell_centers[:,:,0])
           * np.sin(2*np.pi*pde.grid.cell_centers[:,:,1])).reshape(shape)
 

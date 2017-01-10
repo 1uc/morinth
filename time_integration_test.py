@@ -5,7 +5,7 @@ from rusanov import Rusanov
 from grid import Grid
 from boundary_conditions import Periodic
 from finite_volume_fluxes import FiniteVolumeFluxesO1
-from time_integration import BackwardEuler, BDF2
+from time_integration import BackwardEuler, BDF2, DIRKa23, DIRKa34
 from runge_kutta import ForwardEuler, SSP2, SSP3
 from time_loop import TimeLoop
 from time_keeper import FixedDuration, PlotNever
@@ -18,7 +18,7 @@ def test_forward_euler_init():
     fvm = FiniteVolumeFluxesO1(grid, flux)
     bc = Periodic(grid)
 
-    forward_euler = ForwardEuler(bc, fvm, shape=(1, 1, 1))
+    forward_euler = ForwardEuler(bc, fvm)
 
     assert forward_euler.bc is bc
     assert forward_euler.rate_of_change is fvm
@@ -33,15 +33,17 @@ class MockROC(object):
 def test_mock_ode():
     bc = lambda x: None
     mock_roc = MockROC()
-    shape = (1, 1, 1)
+    mask = np.array([True])
 
-    solvers = [ ForwardEuler(bc, mock_roc, shape),
-                BackwardEuler(bc, mock_roc, np.array([True])),
-                BDF2(bc, mock_roc, np.array([True]), fixed_dt = 0.05),
-                SSP2(bc, mock_roc, shape),
-                SSP3(bc, mock_roc, shape) ]
+    solvers = [ ForwardEuler(bc, mock_roc),
+                BackwardEuler(bc, mock_roc, mask, 3.0),
+                BDF2(bc, mock_roc, mask, fixed_dt = 0.05),
+                SSP2(bc, mock_roc),
+                SSP3(bc, mock_roc),
+                DIRKa23(bc, mock_roc, mask, 3.0),
+                DIRKa34(bc, mock_roc, mask, 3.0)]
 
-    tolerances = [0.01, 0.05, 0.008, 0.01, 0.004]
+    tolerances = [0.01, 0.05, 0.008, 0.01, 0.004, 0.0082, 0.0017]
 
     T = 1.0
 
