@@ -21,9 +21,9 @@ class SimplePlotting(object):
 
 class SimpleGraph(SimplePlotting):
     def plot(self, u):
-        plt.plot(self.grid.cell_centers, u[:,:,0])
+        plt.plot(self.grid.cell_centers, u[0,:,:])
 
 
 class SimpleColormap(SimplePlotting):
     def plot(self, u):
-        plt.contourf(self.grid.X, self.grid.Y, u[:,:,0])
+        plt.contourf(self.grid.X, self.grid.Y, u[0,:,:])

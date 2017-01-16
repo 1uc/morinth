@@ -21,18 +21,18 @@ class Grid(object):
 
     def make_boundary_mask(self):
         if isinstance(self._n_cells, int):
-            shape = (self._n_cells, 1, 1)
+            shape = (1, self._n_cells, 1)
         else:
-            shape = (self._n_cells[0], self._n_cells[1], 1)
+            shape = (1, self._n_cells[0], self._n_cells[1])
 
         n_ghost = self.n_ghost
 
         mask = np.full(shape, True, dtype=bool)
-        mask[:n_ghost,:,:] = False
-        mask[-n_ghost:,:,:] = False
+        mask[:,:n_ghost,:] = False
+        mask[:,-n_ghost:,:] = False
         if len(shape) == 2:
-            mask[:,:n_ghost,:] = False
-            mask[:,-n_ghost:,:] = False
+            mask[:,:,:n_ghost] = False
+            mask[:,:,-n_ghost:] = False
 
         self.boundary_mask = mask
 

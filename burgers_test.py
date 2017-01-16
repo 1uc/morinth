@@ -14,9 +14,10 @@ import pytest
 
 def test_burgers_eigenvalue():
     model = Burgers()
-    u = np.random.random((100, 1))
+    u = np.random.random((1, 100))
 
     assert np.all(model.max_eigenvalue(u) >= 0.0)
+    assert np.all(model.max_eigenvalue(u) == np.abs(u))
 
 class PDE(object):
     def __init__(self):
@@ -36,7 +37,7 @@ def test_burgers():
     labels = ["backward_euler"]
 
     T = 0.3
-    u0 = np.cos(2*np.pi*pde.grid.cell_centers.reshape((-1, 1, 1)))
+    u0 = np.cos(2*np.pi*pde.grid.cell_centers.reshape((1, -1, 1)))
     for single_step, label in zip(solvers, labels):
         visualize = lambda x: None
         plotting_steps = PlotEveryNthStep(1)
