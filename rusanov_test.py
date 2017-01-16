@@ -2,22 +2,19 @@ import numpy as np
 
 from burgers import Burgers
 from rusanov import Rusanov
+from flux_test import ContinuityTestSuite
 
 import pytest
 
-@pytest.fixture
-def model():
-    return Burgers()
+class RusanovContinuityTest(ContinuityTestSuite):
+    @pytest.fixture
+    def model(self):
+        return Burgers()
 
-@pytest.fixture
-def rusanov(model):
-    return Rusanov(model)
+    @pytest.fixture
+    def num_flux(self, model):
+        return Rusanov(model)
 
-@pytest.fixture
-def random_state():
-    return np.random.random((100, 1))
-
-
-def test_continuity(model, rusanov, random_state):
-    u = random_state
-    assert np.max(np.abs(rusanov(u, u, 0) - model.flux(u, 0))) <= 1e-12
+    @pytest.fixture
+    def random_state(self):
+        return np.random.random((100, 1))
