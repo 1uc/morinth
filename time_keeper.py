@@ -15,6 +15,9 @@ class FixedDuration(TimeKeeper):
     def pick_time_step(self, u, dt):
         return min(self.T - self.t, dt)
 
+    def progress_string(self):
+        return "{:.2e} / {:.2e}".format(self.t, self.T)
+
 class PlotAtFixedInterval(object):
     def __init__(self, dt_vis):
         self.dt_vis = dt_vis

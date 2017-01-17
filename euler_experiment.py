@@ -5,6 +5,7 @@ from hllc import HLLC
 from rusanov import Rusanov
 from finite_volume_fluxes import FiniteVolumeFluxesO1
 from runge_kutta import ForwardEuler
+from progress_bar import ProgressBar
 
 class EulerExperiment(object):
     """Fixture for numerical experiments with Euler equations."""
@@ -17,6 +18,7 @@ class EulerExperiment(object):
         self.set_up_grid()
         self.set_up_visualization()
         self.set_up_boundary_condition()
+        self.set_up_progress_bar()
 
     def gravity(self):
         return 0.0
@@ -26,6 +28,9 @@ class EulerExperiment(object):
 
     def specific_gas_constant(self):
         return 1.0
+
+    def set_up_progress_bar(self):
+        self.progress_bar = ProgressBar(10)
 
 
 def prefer_hllc(model):

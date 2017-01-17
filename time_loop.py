@@ -1,12 +1,19 @@
 import numpy as np
+from progress_bar import SilentProgressBar
 
 class TimeLoop(object):
-    def __init__(self, single_step, visualize, plotting_steps):
+    def __init__(self, single_step, visualize, plotting_steps, progress_bar = None):
         self.single_step = single_step
         self.visualize = visualize
         self.plotting_steps = plotting_steps
 
+        if progress_bar is None:
+            self.progress_bar = SilentProgressBar()
+        else:
+            self.progress_bar = progress_bar
+
     def __call__(self, u0, time_keeper):
+        self.progress_bar.welcome()
         u = u0
         dt = self.pick_time_step(u, time_keeper)
 
@@ -19,6 +26,9 @@ class TimeLoop(object):
 
             dt = self.pick_time_step(u, time_keeper)
 
+            self.progress_bar(time_keeper)
+
+        self.progress_bar.goodbye(time_keeper)
         return u
 
     def pick_time_step(self, u, time_keeper):

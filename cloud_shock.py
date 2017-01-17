@@ -69,7 +69,7 @@ class CloudShock(EulerExperiment):
         _, _, single_step = scheme_o1(self.model, self.grid, self.boundary_conditions)
 
         time_keeper = FixedDuration(0.06)
-        simulation = TimeLoop(single_step, self.visualize, self.plotting_steps)
+        simulation = TimeLoop(single_step, self.visualize, self.plotting_steps, self.progress_bar)
         simulation(u0, time_keeper)
 
     def set_up_grid(self):
