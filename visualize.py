@@ -21,16 +21,13 @@ class PlottingBase(object):
 
 class SimpleGraph(PlottingBase):
     def plot(self, u):
+        plt.clf()
+
         scalar = self.transform_scalar(u)
         plt.plot(self.grid.cell_centers, scalar)
 
     def transform_scalar(self, u):
-        return u[0, :, :]
-
-
-class SimpleColormap(PlottingBase):
-    def plot(self, u):
-        plot.contourf(self.grid.X, self.grid.Y, u[0,...])
+        return u[0, ...]
 
 
 class ColormapWithArrows(PlottingBase):

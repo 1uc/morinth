@@ -11,7 +11,7 @@ class FiniteVolumeFluxesO1(object):
     def __call__(self, u, t):
         """Compute the rate of change 'dudt' due to FVM."""
         dudt = np.zeros_like(u)
-        dudt[:,1:-1,:] = self.x_flux(u, t)
+        dudt[:,1:-1,...] = self.x_flux(u, t)
 
         if self.grid.n_dims == 2:
             dudt[:,:,1:-1] += self.y_flux(u, t)
@@ -19,8 +19,8 @@ class FiniteVolumeFluxesO1(object):
         return dudt
 
     def x_flux(self, u, t):
-        return -1.0/self.grid.dx * (self.flux(u[:,1:-1,:], u[:,2:,:], 0)
-                                    - self.flux(u[:,:-2,:], u[:,1:-1,:], 0))
+        return -1.0/self.grid.dx * (self.flux(u[:,1:-1,...], u[:,2:,...], 0)
+                                    - self.flux(u[:,:-2,...], u[:,1:-1,...], 0))
 
     def y_flux(self, u, t):
         return -1.0/self.grid.dy * (self.flux(u[:,:,1:-1], u[:,:,2:], 1)
