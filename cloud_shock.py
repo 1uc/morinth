@@ -77,7 +77,7 @@ class CloudShock(EulerExperiment):
 
     def set_up_visualization(self):
         self.visualize = EulerColormaps(self.grid, "img/cloud_shock", self.model)
-        self.plotting_steps = PlotEveryNthStep(steps_per_frame = 10)
+        self.plotting_steps = PlotEveryNthStep(steps_per_frame = 30)
 
     def set_up_boundary_condition(self):
         self.boundary_conditions = Outflow(self.grid)
