@@ -21,7 +21,11 @@ class PlottingBase(object):
 
 class SimpleGraph(PlottingBase):
     def plot(self, u):
-        plt.plot(self.grid.cell_centers, u[0,:,:])
+        scalar = self.transform_scalar(u)
+        plt.plot(self.grid.cell_centers, scalar)
+
+    def transform_scalar(self, u):
+        return u[0, :, :]
 
 
 class SimpleColormap(PlottingBase):
@@ -60,16 +64,17 @@ class ColormapWithArrows(PlottingBase):
         return u[1:3,...] / u[0,...]
 
 
-class DensityPlots(ColormapWithArrows):
+class DensityColormap(ColormapWithArrows):
     def transform_scalar(self, u):
         return u[0,...]
 
-class LogDensityPlots(ColormapWithArrows):
+
+class LogDensityColormap(ColormapWithArrows):
     def transform_scalar(self, u):
         return np.log10(u[0,...])
 
 
-class PressurePlots(ColormapWithArrows):
+class PressureColormap(ColormapWithArrows):
     def __init__(self, grid, base_name, model):
         super().__init__(grid, base_name)
         self.model = model
@@ -78,19 +83,39 @@ class PressurePlots(ColormapWithArrows):
         return self.model.pressure(u)
 
 
-class LogPressurePlots(PressurePlots):
+class LogPressureColormap(PressureColormap):
     def transform_scalar(self, u):
         return np.log10(self.model.pressure(u))
 
-
-
-class EulerPlots(PlottingBase):
-    def __init__(self, grid, base_name, model):
-        self.density_plots = DensityPlots(grid, base_name + "-rho")
-        self.log_density_plots = LogDensityPlots(grid, base_name + "-rho")
-        self.log_pressure_plots = LogPressurePlots(grid, base_name + "-p", model)
-
+class MultiplePlots(PlottingBase):
     def __call__(self, u):
-        self.density_plots(u)
-        self.log_density_plots(u)
-        self.log_pressure_plots(u)
+        for plot in self.all_plots:
+            plot(u)
+
+class EulerColormaps(MultiplePlots):
+    def __init__(self, grid, base_name, model):
+        density_plot = DensityColormap(grid, base_name + "-rho")
+        log_density_plot = LogDensityColormap(grid, base_name + "-logrho")
+        log_pressure_plot = LogPressureColormap(grid, base_name + "-logp", model)
+
+        self.all_plots = [density_plot, log_density_plot, log_pressure_plot]
+
+
+class DensityGraph(SimpleGraph):
+    def transform_scalar(self, u):
+        return u[0, ...]
+
+class PressureGraph(SimpleGraph):
+    def __init__(self, grid, base_name, model):
+        super().__init__(grid, base_name)
+        self.model = model
+
+    def transform_scalar(self, u):
+        return self.model.pressure(u)
+
+class EulerGraphs(MultiplePlots):
+    def __init__(self, grid, base_name, model):
+        density_plot = DensityGraph(grid, base_name + "-rho")
+        pressure_plot = PressureGraph(grid, base_name + "-rho", model)
+
+        self.all_plots = [density_plot, pressure_plot]

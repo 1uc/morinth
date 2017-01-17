@@ -7,17 +7,17 @@ import numpy as np
 from euler import Euler
 from hllc import HLLC
 from grid import Grid
-from visualize import EulerPlots
-from runge_kutta import ForwardEuler
+from visualize import EulerColormaps
 from time_loop import TimeLoop
-from finite_volume_fluxes import FiniteVolumeFluxesO1
 from time_keeper import PlotEveryNthStep, FixedDuration
 from boundary_conditions import Outflow
+
+from euler_experiment import EulerExperiment, scheme_o1
 
 class CloudShockIC:
     def __init__(self, model):
         self.model = model
-        self.Y = np.random.uniform(0.0, 1.0, 8)
+        self.Y = np.array(8*[1.0])
         self.Y[0] = 1.0/25.0 + self.Y[0]/50.0
 
     def __call__(self, grid):
@@ -60,34 +60,28 @@ class CloudShockIC:
 
         return r_crit
 
-class CloudShock:
-    def __init__(self):
-        self.model = Euler(gravity = 0.0, gamma = 1.4, specific_gas_constant = 1.0)
-
-        self.set_up_grid()
-        self.set_up_visualization()
-        self.set_up_boundary_condition()
-
-    def set_up_grid(self):
-        self.grid = Grid([[0.0, 1.0], [0.0, 1.0]], (800, 800), 1)
-
-    def set_up_visualization(self):
-        self.visualize = EulerPlots(self.grid, "img/cloud_shock", self.model)
-        self.plotting_steps = PlotEveryNthStep(steps_per_frame = 10)
-
-    def set_up_boundary_condition(self):
-        self.boundary_conditions = Outflow(self.grid)
+class CloudShock(EulerExperiment):
 
     def __call__(self):
         ic = CloudShockIC(self.model)
         u0 = ic(self.grid)
 
-        hllc = HLLC(self.model)
-        fvm = FiniteVolumeFluxesO1(self.grid, hllc)
-        single_step = ForwardEuler(self.boundary_conditions, fvm)
+        _, _, single_step = scheme_o1(self.model, self.grid, self.boundary_conditions)
+
         time_keeper = FixedDuration(0.06)
         simulation = TimeLoop(single_step, self.visualize, self.plotting_steps)
         simulation(u0, time_keeper)
+
+    def set_up_grid(self):
+        self.grid = Grid([[0.0, 1.0], [0.0, 1.0]], (800, 800), 1)
+
+    def set_up_visualization(self):
+        self.visualize = EulerColormaps(self.grid, "img/cloud_shock", self.model)
+        self.plotting_steps = PlotEveryNthStep(steps_per_frame = 10)
+
+    def set_up_boundary_condition(self):
+        self.boundary_conditions = Outflow(self.grid)
+
 
 if __name__ == '__main__':
     cloud_shock = CloudShock()
