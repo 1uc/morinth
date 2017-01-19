@@ -4,7 +4,7 @@ from burgers import Burgers
 from rusanov import Rusanov
 from grid import Grid
 from boundary_conditions import Periodic
-from finite_volume_fluxes import FiniteVolumeFluxesO1
+from finite_volume_fluxes import FiniteVolumeFluxes
 from time_integration import BackwardEuler, BDF2, DIRKa23, DIRKa34
 from runge_kutta import ForwardEuler, SSP2, SSP3
 from time_loop import TimeLoop
@@ -15,7 +15,7 @@ def test_forward_euler_init():
     model = Burgers()
     flux = Rusanov(model)
     grid = Grid([0.0, 1.0], 100, 1)
-    fvm = FiniteVolumeFluxesO1(grid, flux)
+    fvm = FiniteVolumeFluxes(grid, flux)
     bc = Periodic(grid)
 
     forward_euler = ForwardEuler(bc, fvm)

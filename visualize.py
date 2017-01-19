@@ -113,6 +113,6 @@ class PressureGraph(SimpleGraph):
 class EulerGraphs(MultiplePlots):
     def __init__(self, grid, base_name, model):
         density_plot = DensityGraph(grid, base_name + "-rho")
-        pressure_plot = PressureGraph(grid, base_name + "-rho", model)
+        pressure_plot = PressureGraph(grid, base_name + "-p", model)
 
         self.all_plots = [density_plot, pressure_plot]

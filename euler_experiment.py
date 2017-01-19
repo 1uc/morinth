@@ -3,8 +3,8 @@ import numpy as np
 from euler import Euler
 from hllc import HLLC
 from rusanov import Rusanov
-from finite_volume_fluxes import FiniteVolumeFluxesO1
-from runge_kutta import ForwardEuler
+from finite_volume_fluxes import FiniteVolumeFluxes
+from runge_kutta import ForwardEuler, SSP3
 from progress_bar import ProgressBar
 
 class EulerExperiment(object):
