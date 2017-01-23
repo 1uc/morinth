@@ -42,7 +42,7 @@ class Grid(object):
         self.edges = x.reshape((-1, 1))
         self.cell_centers = 0.5*(self.edges[1:,:] + self.edges[:-1,:])
 
-        self.dx = self.cell_centers[1,0] - self.cell_centers[0,0]
+        self.dx = self.edges[1,0] - self.edges[0,0]
 
     def make_2d_grid(self):
         x = np.linspace(self._domain[0,0], self._domain[0,1], self._n_cells[0]+1)
