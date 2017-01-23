@@ -20,6 +20,20 @@ class TimeKeeper(object):
 
         return dt
 
+class FixedSteps(TimeKeeper):
+    def __init__(self, max_steps, needs_baby_steps=False):
+        super().__init__(needs_baby_steps)
+        self.max_steps = max_steps
+
+    def is_finished(self):
+        return self.n_steps >= self.max_steps
+
+    def pick_time_step(self, u, dt):
+        return self.baby_steps(dt)
+
+    def progress_string(self):
+        return "{:.2e} / ---".format(self.t)
+
 class FixedDuration(TimeKeeper):
     def __init__(self, T, needs_baby_steps=False):
         super().__init__(needs_baby_steps)
