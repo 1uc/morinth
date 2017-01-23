@@ -49,7 +49,7 @@ class Euler(object):
 
     def speed(self, u):
         """Norm of the velocity."""
-        return np.sqrt((u[1,...]**2 + u[2,...]**2)/u[0,...]**2)
+        return np.sqrt((u[1,...]**2 + u[2,...]**2))/u[0,...]
 
     def sound_speed(self, u, p):
         """The speed of sound in the system."""
@@ -65,3 +65,16 @@ class Euler(object):
         cvars[3,...] = self.internal_energy(pvars[3,...]) + self.kinetic_energy(cvars)
 
         return cvars
+
+    def primitive_variables(self, conserved_variables):
+        """Return the primitive variables, given the conserved variables."""
+        cvars = conserved_variables
+        pvars = np.empty_like(cvars)
+
+        pvars[0,...] = cvars[0,...]
+        pvars[1,...] = cvars[1,...]/cvars[0,...]
+        pvars[2,...] = cvars[2,...]/cvars[0,...]
+        pvars[3,...] = self.pressure(cvars)
+
+        return pvars
+
