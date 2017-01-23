@@ -64,7 +64,7 @@ class ForwardEuler(ExplicitRungeKutta):
         b = np.array([1.0])
 
         super().__init__(bc, rate_of_change, ButcherTableau(a, b))
-        self.cfl_number = 0.45
+        self.cfl_number = 0.95
 
 
 class SSP2(ExplicitRungeKutta):
@@ -89,4 +89,4 @@ class SSP3(ExplicitRungeKutta):
         b = np.array([1.0/6, 1.0/6, 2.0/3])
 
         super().__init__(bc, rate_of_change, ButcherTableau(a, b))
-        self.cfl_number = 0.85
+        self.cfl_number = 0.80

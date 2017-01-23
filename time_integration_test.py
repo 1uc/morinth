@@ -43,7 +43,7 @@ def test_mock_ode():
                 DIRKa23(bc, mock_roc, mask, 3.0),
                 DIRKa34(bc, mock_roc, mask, 3.0)]
 
-    tolerances = [0.01, 0.05, 0.008, 0.01, 0.004, 0.0082, 0.0017]
+    tolerances = [0.013, 0.05, 0.008, 0.01, 0.004, 0.0082, 0.0017]
 
     T = 1.0
 

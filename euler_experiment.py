@@ -1,10 +1,7 @@
 import numpy as np
 
 from euler import Euler
-from hllc import HLLC
-from rusanov import Rusanov
 from finite_volume_fluxes import FiniteVolumeFluxes
-from runge_kutta import ForwardEuler, SSP3
 from progress_bar import ProgressBar
 
 class EulerExperiment(object):
@@ -24,26 +21,10 @@ class EulerExperiment(object):
         return 0.0
 
     def gamma(self):
-        return 1.2
+        return 1.4
 
     def specific_gas_constant(self):
         return 1.0
 
     def set_up_progress_bar(self):
         self.progress_bar = ProgressBar(10)
-
-
-def prefer_hllc(model):
-    """Pick a suitable numerical flux."""
-
-    if isinstance(model, Euler):
-        return HLLC(model)
-    else:
-        return Rusanov(model)
-
-def scheme_o1(model, grid, bc):
-    flux = prefer_hllc(model)
-    fvm = FiniteVolumeFluxesO1(grid, flux)
-    single_step = ForwardEuler(bc, fvm)
-
-    return flux, fvm, single_step
