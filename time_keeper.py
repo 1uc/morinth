@@ -1,19 +1,35 @@
 class TimeKeeper(object):
+    def __init__(self, needs_baby_steps):
+        self.needs_baby_steps = needs_baby_steps
+
+        self.t = 0.0
+        self.n_steps = 0
+
     def advance_by(self, dt):
         self.t += dt
         self.n_steps += 1
 
+    def baby_steps(self, dt):
+        if self.needs_baby_steps:
+            if self.n_steps < 10:
+                dt *= 0.01
+            elif 10 <= self.n_steps < 20:
+                dt *= 0.1
+            elif 20 <= self.n_steps < 30:
+                dt *= 0.5
+
+        return dt
+
 class FixedDuration(TimeKeeper):
-    def __init__(self, T):
-        self.t = 0.0
-        self.n_steps = 0
+    def __init__(self, T, needs_baby_steps=False):
+        super().__init__(needs_baby_steps)
         self.T = T
 
     def is_finished(self):
         return self.t >= self.T
 
     def pick_time_step(self, u, dt):
-        return min(self.T - self.t, dt)
+        return min(self.T - self.t, self.baby_steps(dt))
 
     def progress_string(self):
         return "{:.2e} / {:.2e}".format(self.t, self.T)
@@ -39,6 +55,7 @@ class PlotAtFixedInterval(object):
 
     def pick_time_step(self, time_keeper, dt):
         return min(dt, self.t_vis - time_keeper.t)
+
 
 class PlotEveryNthStep(object):
     def __init__(self, steps_per_frame):
