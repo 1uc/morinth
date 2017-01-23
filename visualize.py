@@ -24,10 +24,13 @@ class SimpleGraph(PlottingBase):
         plt.clf()
 
         scalar = self.transform_scalar(u)
-        plt.plot(self.grid.cell_centers, scalar)
+        plt.plot(self.grid.cell_centers, scalar, self.easy_style())
 
     def transform_scalar(self, u):
         return u[0, ...]
+
+    def easy_style(self):
+        return "kx"
 
 
 class ColormapWithArrows(PlottingBase):
@@ -102,6 +105,7 @@ class DensityGraph(SimpleGraph):
     def transform_scalar(self, u):
         return u[0, ...]
 
+
 class PressureGraph(SimpleGraph):
     def __init__(self, grid, base_name, model):
         super().__init__(grid, base_name)
@@ -110,9 +114,22 @@ class PressureGraph(SimpleGraph):
     def transform_scalar(self, u):
         return self.model.pressure(u)
 
+
+class XVelocityGraph(SimpleGraph):
+    def transform_scalar(self, u):
+        return u[1, ...]/u[0, ...]
+
+
+class YVelocityGraph(SimpleGraph):
+    def transform_scalar(self, u):
+        return u[2, ...]/u[0, ...]
+
+
 class EulerGraphs(MultiplePlots):
     def __init__(self, grid, base_name, model):
         density_plot = DensityGraph(grid, base_name + "-rho")
+        vx_plot = XVelocityGraph(grid, base_name + "-vx")
+        vy_plot = YVelocityGraph(grid, base_name + "-vy")
         pressure_plot = PressureGraph(grid, base_name + "-p", model)
 
-        self.all_plots = [density_plot, pressure_plot]
+        self.all_plots = [density_plot, pressure_plot, vx_plot, vy_plot]
