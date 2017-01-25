@@ -63,15 +63,18 @@ def test_weno_discontinuous():
 
     for f, c in zip(functions, criteria):
         for resolution in resolutions:
+            plt.clf()
+
             grid = Grid([0.0, 1.0], int(resolution), 3)
 
             cell_average = GaussLegendre(5)
             u0 = 1.0/grid.dx*cell_average(grid.edges, f).reshape((1, -1))
 
             u_plus, u_minus = weno(u0, axis=0)
-            plt.plot(grid.edges[3:-3,0], u_plus[0,:], '+')
-            plt.hold()
-            plt.plot(grid.edges[3:-3,0], u_minus[0,:], 'x')
+            plt.plot(grid.edges[3:-3,0], u_plus[0,:], '>')
+            plt.hold(True)
+            plt.plot(grid.cell_centers[3:-3,0], u0[0,3:-3], 'k_')
+            plt.plot(grid.edges[3:-3,0], u_minus[0,:], '<')
             plt.show()
 
             c(u_plus, u_minus)
