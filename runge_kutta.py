@@ -64,7 +64,7 @@ class ForwardEuler(ExplicitRungeKutta):
         b = np.array([1.0])
 
         super().__init__(bc, rate_of_change, ButcherTableau(a, b))
-        self.cfl_number = 0.95
+        self.cfl_number = 0.40
 
 
 class SSP2(ExplicitRungeKutta):
@@ -78,6 +78,7 @@ class SSP2(ExplicitRungeKutta):
         super().__init__(bc, rate_of_change, ButcherTableau(a, b))
         self.cfl_number = 0.85
 
+
 class SSP3(ExplicitRungeKutta):
     """Third order strong stability preserving RK method."""
 
@@ -89,4 +90,4 @@ class SSP3(ExplicitRungeKutta):
         b = np.array([1.0/6, 1.0/6, 2.0/3])
 
         super().__init__(bc, rate_of_change, ButcherTableau(a, b))
-        self.cfl_number = 0.80
+        self.cfl_number = 0.40

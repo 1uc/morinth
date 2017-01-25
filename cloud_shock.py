@@ -4,15 +4,9 @@
 # Cloud-shock interaction from [Mishra, Schwab, Sukys 2012].
 
 import numpy as np
-from euler import Euler
-from hllc import HLLC
-from grid import Grid
-from visualize import EulerColormaps
-from time_loop import TimeLoop
-from time_keeper import PlotEveryNthStep, FixedDuration
-from boundary_conditions import Outflow
 
-from euler_experiment import EulerExperiment, scheme_o1
+from boundary_conditions import Outflow
+from euler_experiment import EulerExperiment2D
 
 class CloudShockIC:
     def __init__(self, model):
@@ -60,27 +54,36 @@ class CloudShockIC:
 
         return r_crit
 
-class CloudShock(EulerExperiment):
+class CloudShock(EulerExperiment2D):
+    """Interaction of a travelling shock with a stationary high-density cloud."""
 
-    def __call__(self):
-        ic = CloudShockIC(self.model)
-        u0 = ic(self.grid)
+    @property
+    def final_time(self):
+        return 0.06
 
-        _, _, single_step = scheme_o1(self.model, self.grid, self.boundary_conditions)
+    @property
+    def n_cells(self):
+        return 100
 
-        time_keeper = FixedDuration(0.06)
-        simulation = TimeLoop(single_step, self.visualize, self.plotting_steps, self.progress_bar)
-        simulation(u0, time_keeper)
+    @property
+    def order(self):
+        return 1
 
-    def set_up_grid(self):
-        self.grid = Grid([[0.0, 1.0], [0.0, 1.0]], (800, 800), 1)
+    @property
+    def initial_condition(self):
+        return CloudShockIC(self.model)
 
-    def set_up_visualization(self):
-        self.visualize = EulerColormaps(self.grid, "img/cloud_shock", self.model)
-        self.plotting_steps = PlotEveryNthStep(steps_per_frame = 30)
+    @property
+    def boundary_condition(self):
+        return Outflow(self.grid)
 
-    def set_up_boundary_condition(self):
-        self.boundary_conditions = Outflow(self.grid)
+    @property
+    def output_filename(self):
+        return "img/cloud_shock"
+
+    @property
+    def steps_per_frame(self):
+        return 5
 
 
 if __name__ == '__main__':

@@ -62,15 +62,15 @@ class FiniteVolumeFluxes(object):
     def pick_time_step(self, u):
         return self.grid.dx/np.max(self.model.max_eigenvalue(u));
 
+def prefered_flux(model):
+    return prefer_hllc(model)
 
 def prefer_hllc(model):
     """Pick a suitable numerical flux."""
-    return Rusanov(model)
-
-    # if isinstance(model, Euler):
-    #     return HLLC(model)
-    # else:
-    #     return Rusanov(model)
+    if isinstance(model, Euler):
+        return HLLC(model)
+    else:
+        return Rusanov(model)
 
 def prefer_weno_primitive(model):
     """Pick reconstruction in primitive variables over conservative."""
@@ -81,14 +81,14 @@ def prefer_weno_primitive(model):
         return WENO()
 
 def scheme_o1(model, grid, bc):
-    flux = prefer_hllc(model)
+    flux = prefered_flux(model)
     fvm = FiniteVolumeFluxes(grid, flux)
     single_step = ForwardEuler(bc, fvm)
 
     return flux, fvm, single_step
 
 def scheme_weno(model, grid, bc):
-    flux = prefer_hllc(model)
+    flux = prefered_flux(model)
     rc = prefer_weno_primitive(model)
     fvm = FiniteVolumeFluxes(grid, flux, rc)
     single_step = SSP3(bc, fvm)
@@ -96,10 +96,9 @@ def scheme_weno(model, grid, bc):
     return flux, fvm, single_step
 
 def scheme_eno(model, grid, bc):
-    flux = prefer_hllc(model)
+    flux = prefered_flux(model)
     rc = ENO()
     fvm = FiniteVolumeFluxes(grid, flux, rc)
     single_step = SSP3(bc, fvm)
 
     return flux, fvm, single_step
-

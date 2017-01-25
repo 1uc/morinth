@@ -1,16 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
 
 import numpy as np
 
-from grid import Grid
-from visualize import EulerGraphs
-from time_loop import TimeLoop
-from time_keeper import PlotEveryNthStep, FixedDuration, FixedSteps, PlotNever
 from boundary_conditions import Outflow
+from weno import WENOPrimitive
+from rusanov import Rusanov
 
 from euler_experiment import EulerExperiment
-from finite_volume_fluxes import scheme_o1, scheme_weno, scheme_eno
 
 class ShockTubeIC:
     """Toro's shock-tube."""
@@ -32,28 +29,72 @@ class ShockTubeIC:
         return self.model.conserved_variables(u0)
 
 
-class ShockTube(EulerExperiment):
+class ShockTubeBase(EulerExperiment):
+    @property
+    def final_time(self):
+        return 0.2
 
-    def __call__(self):
-        ic = ShockTubeIC(self.model)
-        u0 = ic(self.grid)
+    @property
+    def n_cells(self):
+        return 100
 
-        _, _, single_step = scheme_weno(self.model, self.grid, self.boundary_conditions)
-        # time_keeper = FixedSteps(10, needs_baby_steps=True)
-        time_keeper = FixedDuration(0.2, needs_baby_steps=True)
-        simulation = TimeLoop(single_step, self.visualize, self.plotting_steps, self.progress_bar)
-        simulation(u0, time_keeper)
+    @property
+    def flux(self):
+        return Rusanov(self.model)
 
-    def set_up_grid(self):
-        self.grid = Grid([0.0, 1.0], 100, 3)
+    @property
+    def steps_per_frame(self):
+        return 30
 
-    def set_up_visualization(self):
-        self.visualize = EulerGraphs(self.grid, "img/shock_tube_weno", self.model)
-        self.plotting_steps = PlotEveryNthStep(steps_per_frame = 30)
+    @property
+    def boundary_condition(self):
+        return Outflow(self.grid)
 
-    def set_up_boundary_condition(self):
-        self.boundary_conditions = Outflow(self.grid)
+    @property
+    def initial_condition(self):
+        return ShockTubeIC(self.model)
+
+    @property
+    def needs_baby_steps(self):
+        return True
+
+
+class ShockTubeO1(ShockTubeBase):
+    @property
+    def output_filename(self):
+        return "img/shock_tube-o1"
+
+    @property
+    def order(self):
+        return 1
+
+
+class ENOShockTube(ShockTubeBase):
+    @property
+    def output_filename(self):
+        return "img/shock_tube-eno"
+
+    @property
+    def order(self):
+        return 3
+
+
+class WENOShockTube(ShockTubeBase):
+    @property
+    def output_filename(self):
+        return "img/shock_tube-weno"
+
+    @property
+    def reconstruction(self):
+        return WENOPrimitive(self.model)
+
+    @property
+    def order(self):
+        return 5
 
 if __name__ == '__main__':
-    shock_tube = ShockTube()
-    shock_tube()
+    # all_solvers = [ShockTubeO1()]
+    all_solvers = [ShockTubeO1(), ENOShockTube(), WENOShockTube()]
+
+    for shock_tube in all_solvers:
+         shock_tube()

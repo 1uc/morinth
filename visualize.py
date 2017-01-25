@@ -30,7 +30,7 @@ class SimpleGraph(PlottingBase):
         return u[0, ...]
 
     def easy_style(self):
-        return "kx"
+        return "wo"
 
 
 class ColormapWithArrows(PlottingBase):
@@ -129,7 +129,6 @@ class EulerGraphs(MultiplePlots):
     def __init__(self, grid, base_name, model):
         density_plot = DensityGraph(grid, base_name + "-rho")
         vx_plot = XVelocityGraph(grid, base_name + "-vx")
-        vy_plot = YVelocityGraph(grid, base_name + "-vy")
         pressure_plot = PressureGraph(grid, base_name + "-p", model)
 
-        self.all_plots = [density_plot, pressure_plot, vx_plot, vy_plot]
+        self.all_plots = [density_plot, pressure_plot, vx_plot]

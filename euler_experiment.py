@@ -1,30 +1,169 @@
 import numpy as np
 
+from burgers import Burgers
 from euler import Euler
-from finite_volume_fluxes import FiniteVolumeFluxes
+from finite_volume_fluxes import FiniteVolumeFluxes, FirstOrderReconstruction
 from progress_bar import ProgressBar
+from grid import Grid
+from time_loop import TimeLoop
+from time_keeper import PlotEveryNthStep, FixedDuration
+from weno import WENO, ENO
+from visualize import SimpleGraph, EulerGraphs, EulerColormaps
+from runge_kutta import ForwardEuler, SSP3
+from hllc import HLLC
+from rusanov import Rusanov
 
-class EulerExperiment(object):
+class NumericalExperiment(object):
+    """Base for all numerical experitments."""
+
+    def __call__(self):
+        u0 = self.initial_condition(self.grid)
+        self.simulation(u0, self.time_keeper)
+
+    @property
+    def n_ghost(self):
+        if self.order == 1:
+            return 1
+        elif self.order == 3 or self.order == 5:
+            return 3
+        else:
+            raise Exception("Invalid order [{:s}].".format(self.order))
+
+    @property
+    def grid(self):
+        if hasattr(self, "_grid"):
+            return self._grid
+        else:
+            self._grid = Grid([0.0, 1.0], self.n_cells, self.n_ghost)
+            return self._grid
+
+    @property
+    def fvm(self):
+        return FiniteVolumeFluxes(self.grid, self.flux, self.reconstruction)
+
+    @property
+    def single_step(self):
+        if hasattr(self, "_single_step"):
+            return self._single_step
+        else:
+            if self.order == 1:
+                self._single_step = ForwardEuler(self.boundary_condition, self.fvm)
+            elif self.order == 3 or self.order == 5:
+                self._single_step = SSP3(self.boundary_condition, self.fvm)
+            else:
+                raise Exception("Invalid order [{:s}].".format(self.order))
+
+            return self._single_step
+
+    @property
+    def time_keeper(self):
+        if hasattr(self, "_time_keeper"):
+            return self._time_keeper
+        else:
+            self._time_keeper = FixedDuration(self.final_time, self.needs_baby_steps)
+            return self._time_keeper
+
+    @property
+    def needs_baby_steps(self):
+        return False
+
+    @property
+    def simulation(self):
+        if hasattr(self, "_simulation"):
+            return self._simulation
+        else:
+            self._simulation = TimeLoop(self.single_step,
+                                        self.visualize,
+                                        self.plotting_steps,
+                                        self.progress_bar)
+            return self._simulation
+
+    @property
+    def plotting_steps(self):
+        return PlotEveryNthStep(steps_per_frame = self.steps_per_frame)
+
+    @property
+    def steps_per_frame(self):
+        return 30
+
+    @property
+    def flux(self):
+        return Rusanov(self.model)
+
+    @property
+    def reconstruction(self):
+        if self.order == 1:
+            return FirstOrderReconstruction()
+        elif self.order == 3:
+            return ENO()
+        elif self.order == 5:
+            return WENO()
+        else:
+            raise Exception("Invalid order [{:s}].".format(self.order))
+
+    @property
+    def progress_bar(self):
+        return ProgressBar(10)
+
+
+class BurgersExperiment(NumericalExperiment):
+    @property
+    def model(self):
+        return Burgers()
+
+    @property
+    def visualize(self):
+        return SimpleGraph(self.grid, self.output_filename)
+
+
+class EulerExperiment(NumericalExperiment):
     """Fixture for numerical experiments with Euler equations."""
 
-    def __init__(self):
-        self.model = Euler(gravity = self.gravity(),
-                           gamma = self.gamma(),
-                           specific_gas_constant = self.specific_gas_constant())
+    @property
+    def model(self):
+        return Euler(gravity = self.gravity,
+                     gamma = self.gamma,
+                     specific_gas_constant = self.specific_gas_constant)
 
-        self.set_up_grid()
-        self.set_up_visualization()
-        self.set_up_boundary_condition()
-        self.set_up_progress_bar()
-
+    @property
     def gravity(self):
         return 0.0
 
+    @property
     def gamma(self):
         return 1.4
 
+    @property
     def specific_gas_constant(self):
         return 1.0
 
-    def set_up_progress_bar(self):
-        self.progress_bar = ProgressBar(10)
+    @property
+    def visualize(self):
+        return EulerGraphs(self.grid, self.output_filename, self.model)
+
+    @property
+    def flux(self):
+        return HLLC(self.model)
+
+
+class EulerExperiment2D(EulerExperiment):
+    @property
+    def domain(self):
+        return [[0.0, 1.0], [0.0, 1.0]]
+
+    @property
+    def resolution(self):
+        return (self.n_cells, self.n_cells)
+
+    @property
+    def visualize(self):
+        return EulerColormaps(self.grid, self.output_filename, self.model)
+
+    @property
+    def grid(self):
+        if hasattr(self, "_grid"):
+            return self._grid
+        else:
+            self._grid = Grid(self.domain, self.resolution, self.n_ghost)
+            return self._grid
+
