@@ -37,12 +37,12 @@ def weno_error(resolution):
     return err_plus, err_minus
 
 def test_weno_smooth():
-    resolutions = np.array([10, 20, 40, 80, 160]).reshape((-1,1))
+    resolutions = np.array([16, 26, 46, 86, 166]).reshape((-1,1))
     err = np.array([weno_error(int(res)) for res in list(resolutions)])
 
-    rate = np.log(err[:-1,:]/err[1:,:]) / np.log(resolutions[:-1,:]/resolutions[1:,:])
+    rate = np.log(err[:-1,:]/err[1:,:]) / np.log((resolutions[:-1,:] - 6)/(resolutions[1:,:] - 6))
     rate = np.max(np.abs(rate), axis=0)
-    assert np.all(np.abs(rate - 5.0) < 0.1), "Observed rate: {:.1e}".format(rate)
+    assert np.all(np.abs(rate - 5.0) < 0.1), "Observed rate: " + str(rate)
 
 def increasing_criterium(u_plus, u_minus):
     assert np.all(u_plus <= u_minus + 1e-9)

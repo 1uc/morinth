@@ -25,6 +25,11 @@ class SimpleGraph(PlottingBase):
 
         scalar = self.transform_scalar(u)
         plt.plot(self.grid.cell_centers, scalar, self.easy_style())
+        self.xlim()
+
+    def xlim(self):
+        n_ghost = self.grid.n_ghost
+        plt.xlim((self.grid.edges[n_ghost], self.grid.edges[-n_ghost]))
 
     def transform_scalar(self, u):
         return u[0, ...]

@@ -36,8 +36,22 @@ class Grid(object):
 
         self.boundary_mask = mask
 
+    def partition(self, x0, x1, n_cells):
+        n_ghost = self.n_ghost
+        x = np.empty(n_cells+1)
+        x[n_ghost:-n_ghost] = np.linspace(x0, x1, n_cells - 2*n_ghost + 1)
+
+        dx0 = x[n_ghost+1] - x[n_ghost]
+        dx1 = x[-n_ghost-1] - x[-n_ghost-2]
+
+        for k in range(1, n_ghost+1):
+            x[n_ghost-k] = x[n_ghost] - k*dx0
+            x[-n_ghost+k-1] = x[-n_ghost-1] + k*dx1
+
+        return x
+
     def make_1d_grid(self):
-        x = np.linspace(self._domain[0], self._domain[1], self._n_cells+1)
+        x = self.partition(self._domain[0], self._domain[1], self._n_cells)
 
         self.edges = x.reshape((-1, 1))
         self.cell_centers = 0.5*(self.edges[1:,:] + self.edges[:-1,:])
@@ -45,8 +59,8 @@ class Grid(object):
         self.dx = self.edges[1,0] - self.edges[0,0]
 
     def make_2d_grid(self):
-        x = np.linspace(self._domain[0,0], self._domain[0,1], self._n_cells[0]+1)
-        y = np.linspace(self._domain[1,0], self._domain[1,1], self._n_cells[1]+1)
+        x = self.partition(self._domain[0,0], self._domain[0,1], self._n_cells[0])
+        y = self.partition(self._domain[1,0], self._domain[1,1], self._n_cells[1])
 
         self.edges = np.empty((x.shape[0], y.shape[0], 2))
         X, Y = np.meshgrid(x, y)
