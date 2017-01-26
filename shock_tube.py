@@ -36,7 +36,7 @@ class ShockTubeBase(EulerExperiment):
 
     @property
     def n_cells(self):
-        return 100
+        return 1000
 
     @property
     def flux(self):
