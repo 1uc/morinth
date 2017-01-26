@@ -9,6 +9,9 @@ class Grid(object):
 
         self.n_dims = self._domain.ndim
         self.n_ghost = n_ghost
+        self.lower_boundary = np.reshape(self._domain.transpose(), (2, -1))[0,:]
+        self.upper_boundary = np.reshape(self._domain.transpose(), (2, -1))[1,:]
+        self.extent = self.upper_boundary - self.lower_boundary
 
         self.make_boundary_mask()
 
