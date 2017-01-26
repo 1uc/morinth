@@ -13,7 +13,7 @@ def quadrature_error(n_cells, n_points):
     grid = Grid([10.0, 100.0], n_cells, 1)
     integrate = GaussLegendre(n_points)
 
-    fbar = 1.0/grid.dx*integrate(grid.edges, sinusoidal)
+    fbar = integrate(grid.edges, sinusoidal)
     fref = np.empty(n_cells)
 
     for i in range(n_cells):

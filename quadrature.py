@@ -9,7 +9,7 @@ class GaussQuadrature:
         xi = 0.5*(qi + 1)*dx + edges[:-1]
         wi = 0.5*self.weights*dx
 
-        return np.sum(wi*f(xi), axis=-1)
+        return np.sum(wi*f(xi), axis=-1)/dx[:,0]
 
 
 class GaussLegendre(GaussQuadrature):

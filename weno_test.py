@@ -23,7 +23,7 @@ def weno_error(resolution):
     x = grid.cell_centers
 
     cell_average = GaussLegendre(5)
-    u0 = 1.0/grid.dx*cell_average(grid.edges, sinusoidal).reshape((1, -1))
+    u0 = cell_average(grid.edges, sinusoidal).reshape((1, -1))
     weno = OptimalWENO()
 
     u_plus, u_minus = weno(u0, axis=0)
