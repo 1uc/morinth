@@ -1,25 +1,32 @@
 import numpy as np
 
+from advection import Advection
 from burgers import Burgers
 from euler import Euler
 from shallow_water import ShallowWater
-from finite_volume_fluxes import FiniteVolumeFluxes, FirstOrderReconstruction
-from progress_bar import ProgressBar
-from grid import Grid
-from time_loop import TimeLoop
-from time_keeper import PlotEveryNthStep, FixedDuration
-from weno import StableWENO, ENO, OptimalWENO
-from visualize import SimpleGraph, EulerGraphs, EulerColormaps
-from runge_kutta import ForwardEuler, SSP3
+
 from hllc import HLLC
 from rusanov import Rusanov
+
+from weno import StableWENO, ENO, OptimalWENO
+from runge_kutta import ForwardEuler, SSP3
+
+from grid import Grid
+from time_keeper import PlotEveryNthStep, FixedDuration
+from boundary_conditions import Periodic
+from visualize import SimpleGraph, EulerGraphs, EulerColormaps
+
+from finite_volume_fluxes import FiniteVolumeFluxes, FirstOrderReconstruction
+from time_loop import TimeLoop
+from progress_bar import ProgressBar
+
 
 class NumericalExperiment(object):
     """Base for all numerical experitments."""
 
     def __call__(self):
         u0 = self.initial_condition(self.grid)
-        self.simulation(u0, self.time_keeper)
+        return self.simulation(u0, self.time_keeper)
 
     @property
     def n_ghost(self):
@@ -105,6 +112,16 @@ class NumericalExperiment(object):
     @property
     def progress_bar(self):
         return ProgressBar(10)
+
+
+class AdvectionExperiment(NumericalExperiment):
+    @property
+    def model(self):
+        return Advection(self.velocity)
+
+    @property
+    def boundary_condition(self):
+        return Periodic(self.grid)
 
 
 class BurgersExperiment(NumericalExperiment):

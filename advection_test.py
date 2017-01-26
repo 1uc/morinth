@@ -1,13 +1,20 @@
 import numpy as np
 
+import matplotlib.pylab as plt
+
 from advection import Advection
 from rusanov import Rusanov
 from grid import Grid
 from boundary_conditions import Periodic
 from finite_volume_fluxes import FiniteVolumeFluxes
-from runge_kutta import ForwardEuler
+from runge_kutta import ForwardEuler, Fehlberg
 from time_loop import TimeLoop
 from time_keeper import FixedDuration, PlotNever
+from quadrature import GaussLegendre
+from testing_tools import l1_error, convergence_rate
+from euler_experiment import AdvectionExperiment
+from progress_bar import SilentProgressBar
+from weno import OptimalWENO
 
 import pytest
 
@@ -36,4 +43,81 @@ def test_advection():
 
     assert np.all(np.isfinite(uT))
 
+def smooth_pattern(x):
+    return np.sin(2.0*np.pi*x - 0.1)
+
+class SineAdvection(AdvectionExperiment):
+    def __init__(self, n_cells, order):
+        self._order = order
+        self._n_cells = n_cells + self.n_ghost
+        self.cell_average = GaussLegendre(5)
+
+    @property
+    def final_time(self):
+        return 0.05
+
+    @property
+    def progress_bar(self):
+        return SilentProgressBar()
+
+    @property
+    def plotting_steps(self):
+        return PlotNever()
+
+    @property
+    def order(self):
+        return self._order
+
+    @property
+    def n_cells(self):
+        return self._n_cells
+
+    @property
+    def initial_condition(self):
+        return lambda grid: self.cell_average(grid.edges, smooth_pattern).reshape((1, -1))
+
+    @property
+    def velocity(self):
+        return np.array([2.34])
+
+    @property
+    def reference_solution(self):
+        t, v = self.final_time, self.velocity
+        return self.cell_average(self.grid.edges, lambda x: smooth_pattern(x - t*v)).reshape((1, -1))
+        # return smooth_pattern(self.grid.cell_centers - t*v).reshape((1, -1))
+
+    @property
+    def visualize(self):
+        return None
+
+    @property
+    def single_step(self):
+        _single_step = Fehlberg(self.boundary_condition, self.fvm)
+        self._single_step = getattr(self, "_single_step", _single_step)
+        return self._single_step
+
+
+def test_convergence_rate():
+    all_resolutions = [10, 20, 40, 80, 160]
+
+    weno = OptimalWENO()
+    err = np.empty(len(all_resolutions))
+
+    for k, resolution in enumerate(all_resolutions):
+        simulation = SineAdvection(resolution, 5)
+        grid = simulation.grid
+
+        uT = simulation()
+        u_ref = simulation.reference_solution
+
+        plt.clf()
+        plt.plot(grid.cell_centers[:,0], uT[0,...])
+        plt.hold(True)
+        plt.plot(grid.cell_centers[:,0], u_ref[0,...])
+        plt.show()
+
+        err[k] = l1_error(uT[:,3:-3], u_ref[:,3:-3])
+
+    print(err)
+    print(convergence_rate(err, np.array(all_resolutions)))
 
