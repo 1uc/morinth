@@ -93,7 +93,7 @@ class WENOShockTube(ShockTubeBase):
         return 5
 
 if __name__ == '__main__':
-    # all_solvers = [ShockTubeO1()]
+    # all_solvers = [WENOShockTube()]
     all_solvers = [ShockTubeO1(), ENOShockTube(), WENOShockTube()]
 
     for shock_tube in all_solvers:

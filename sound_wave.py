@@ -61,7 +61,7 @@ class SoundWave(PeriodicEulerExperiment):
 
     @property
     def final_time(self):
-        return 1.0
+        return 3.0
 
     @property
     def initial_condition(self):
@@ -73,7 +73,7 @@ class SoundWave(PeriodicEulerExperiment):
 
     @property
     def steps_per_frame(self):
-        return 5
+        return 30
 
 
 class SmoothAdvection(PeriodicEulerExperiment):
