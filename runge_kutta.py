@@ -29,7 +29,7 @@ class ExplicitRungeKutta(ExplicitTimeIntegration):
             dt_star = self.tableau.c[s]*dt
             t_star = t + dt_star
 
-            u_star = u0 + dt_star*np.sum(self.tableau.a[s,:s]*k[...,:s], axis=-1)
+            u_star = u0 + dt*np.sum(self.tableau.a[s,:s]*k[...,:s], axis=-1)
             self.bc(u_star)
 
             k[...,s] = self.rate_of_change(u_star, t_star)
