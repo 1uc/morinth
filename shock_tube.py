@@ -4,7 +4,7 @@
 import numpy as np
 
 from boundary_conditions import Outflow
-from weno import WENOPrimitive
+from weno import StableWENO, OptimalWENO, PrimitiveReconstruction
 from rusanov import Rusanov
 
 from euler_experiment import EulerExperiment
@@ -86,7 +86,7 @@ class WENOShockTube(ShockTubeBase):
 
     @property
     def reconstruction(self):
-        return WENOPrimitive(self.model)
+        return OptimalWENO()
 
     @property
     def order(self):

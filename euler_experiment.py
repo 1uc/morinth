@@ -7,7 +7,7 @@ from progress_bar import ProgressBar
 from grid import Grid
 from time_loop import TimeLoop
 from time_keeper import PlotEveryNthStep, FixedDuration
-from weno import WENO, ENO
+from weno import StableWENO, ENO, OptimalWENO
 from visualize import SimpleGraph, EulerGraphs, EulerColormaps
 from runge_kutta import ForwardEuler, SSP3
 from hllc import HLLC
@@ -97,7 +97,7 @@ class NumericalExperiment(object):
         elif self.order == 3:
             return ENO()
         elif self.order == 5:
-            return WENO()
+            return OptimalWENO()
         else:
             raise Exception("Invalid order [{:s}].".format(self.order))
 

@@ -3,7 +3,7 @@ import numpy as np
 from euler import Euler
 from hllc import HLLC
 from rusanov import Rusanov
-from weno import ENO, WENO, WENOPrimitive
+from weno import ENO, OptimalWENO, PrimitiveReconstruction
 from runge_kutta import ForwardEuler, SSP3
 
 class FirstOrderReconstruction():
@@ -76,9 +76,9 @@ def prefer_weno_primitive(model):
     """Pick reconstruction in primitive variables over conservative."""
 
     if isinstance(model, Euler):
-        return WENOPrimitive(model)
+        return PrimitiveReconstruction(model, OptimalWENO())
     else:
-        return WENO()
+        return OptimalWENO()
 
 def scheme_o1(model, grid, bc):
     flux = prefered_flux(model)

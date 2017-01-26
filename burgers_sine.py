@@ -5,7 +5,6 @@ import numpy as np
 from burgers import Burgers
 
 from grid import Grid
-from weno import WENO
 from finite_volume_fluxes import scheme_o1, scheme_weno
 from visualize import SimpleGraph
 from boundary_conditions import Periodic

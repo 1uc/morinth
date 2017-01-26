@@ -1,6 +1,6 @@
 import numpy as np
 
-from weno import WENO
+from weno import OptimalWENO
 from grid import Grid
 from quadrature import GaussLegendre
 
@@ -24,7 +24,7 @@ def weno_error(resolution):
 
     cell_average = GaussLegendre(5)
     u0 = 1.0/grid.dx*cell_average(grid.edges, sinusoidal).reshape((1, -1))
-    weno = WENO()
+    weno = OptimalWENO()
 
     u_plus, u_minus = weno(u0, axis=0)
 
@@ -56,7 +56,7 @@ def decreasing_criterium(u_plus, u_minus):
 
 @pytest.mark.skip(reason="This requires visual inspection.")
 def test_weno_discontinuous():
-    weno = WENO()
+    weno = OptimalWENO()
     resolutions = np.array([10, 20, 40]).reshape((-1,1))
     functions = [montone_increasing, montone_decreasing]
     criteria = [increasing_criterium, decreasing_criterium]

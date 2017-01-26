@@ -3,7 +3,7 @@
 import numpy as np
 
 from euler_experiment import EulerExperiment
-from finite_volume_fluxes import scheme_o1, scheme_weno, scheme_eno
+from weno import OptimalWENO
 from boundary_conditions import Periodic
 
 class SoundWaveIC(object):
