@@ -2,6 +2,7 @@ import numpy as np
 
 from burgers import Burgers
 from euler import Euler
+from shallow_water import ShallowWater
 from finite_volume_fluxes import FiniteVolumeFluxes, FirstOrderReconstruction
 from progress_bar import ProgressBar
 from grid import Grid
@@ -110,6 +111,22 @@ class BurgersExperiment(NumericalExperiment):
     @property
     def model(self):
         return Burgers()
+
+    @property
+    def visualize(self):
+        return SimpleGraph(self.grid, self.output_filename)
+
+
+class ShallowWaterExperiment(NumericalExperiment):
+    """Base class for all shallow-water numerical experiments."""
+
+    @property
+    def model(self):
+        return ShallowWater(gravity = self.gravity)
+
+    @property
+    def gravity(self):
+        return 10.0
 
     @property
     def visualize(self):
