@@ -3,6 +3,9 @@ import numpy as np
 class ENOBase(object):
     """Base class for (W)ENO reconstruction."""
 
+    def __init__(self, transform=None):
+        self._transform = transform
+
     def __call__(self, u, axis):
         """Return reconstructed values U-, U+."""
 
@@ -19,32 +22,33 @@ class ENOBase(object):
 
         return u_plus, u_minus
 
-
-    def u123(self, u):
-        u1 = self.stencil(u, [1.0/3.0, -7.0/6.0, 11.0/6.0], (0, -4))
-        u2 = self.stencil(u, [-1.0/6.0, 5.0/6.0, 1.0/3.0], (1, -3))
-        u3 = self.stencil(u, [1.0/3.0, 5.0/6.0, -1.0/6.0], (2, -2))
+    def u123(self, u_pack):
+        ua, ub, uc, ud, ue = u_pack
+        u1 = self.stencil(ua, ub, uc, [1.0/3.0, -7.0/6.0, 11.0/6.0])
+        u2 = self.stencil(ub, uc, ud, [-1.0/6.0, 5.0/6.0, 1.0/3.0])
+        u3 = self.stencil(uc, ud, ue, [1.0/3.0, 5.0/6.0, -1.0/6.0])
 
         return u1, u2, u3
 
-    def smoothness_indicators(self, u):
-        a = 13.0/12.0*self.stencil(u, [1.0, -2.0, 1.0], (0, -2))**2
-        beta1 = a[...,:-2]  + 0.25*self.stencil(u, [1.0, -4.0,  3.0], (0, -4))**2
-        beta2 = a[...,1:-1] + 0.25*self.stencil(u, [1.0,  0.0, -1.0], (1, -3))**2
-        beta3 = a[...,2:]   + 0.25*self.stencil(u, [3.0, -4.0,  1.0], (2, -2))**2
+    def smoothness_indicators(self, u_pack):
+        ua, ub, uc, ud, ue = u_pack
+        beta1 = 13.0/12.0*self.stencil(ua, ub, uc, [1.0, -2.0,  1.0])**2 \
+                   + 0.25*self.stencil(ua, ub, uc, [1.0, -4.0,  3.0])**2
+        beta2 = 13.0/12.0*self.stencil(ub, uc, ud, [1.0, -2.0,  1.0])**2 \
+                   + 0.25*self.stencil(ub, uc, ud, [1.0,  0.0, -1.0])**2
+        beta3 = 13.0/12.0*self.stencil(uc, ud, ue, [1.0, -2.0,  1.0])**2 \
+                   + 0.25*self.stencil(uc, ud, ue, [3.0, -4.0,  1.0])**2
 
         return beta1, beta2, beta3
 
-    def stencil(self, u, values, shift):
-        def get_slice(u, start, end):
-            if end == 0:
-                return u[...,start:]
-            else:
-                return u[...,start:end]
+    def stencil(self, u1, u2, u3, alpha):
+        return alpha[0]*u1 + alpha[1]*u2 + alpha[2]*u3
 
-        return values[0]*get_slice(u, shift[0],   shift[1])     \
-             + values[1]*get_slice(u, shift[0]+1, shift[1]+1)   \
-             + values[2]*get_slice(u, shift[0]+2, shift[1]+2)
+    def transform(self, u):
+        if self._transform is None:
+            return u[:,:-4], u[:,1:-3], u[:,2:-2], u[:,3:-1], u[:,4:]
+        else:
+            return self._transform(u)
 
 
 class ENO(ENOBase):
@@ -53,8 +57,9 @@ class ENO(ENOBase):
     def trace_values(self, u):
         """Compute the i+1/2 ENO trace value over the last axis."""
 
-        u1, u2, u3 = self.u123(u)
-        beta1, beta2, beta3 = self.smoothness_indicators(u)
+        u_transformed = self.transform(u)
+        u1, u2, u3 = self.u123(u_transformed)
+        beta1, beta2, beta3 = self.smoothness_indicators(u_transformed)
 
         beta_min = np.minimum(np.minimum(beta1, beta2), beta3)
 
@@ -67,8 +72,9 @@ class ENO(ENOBase):
 
 class WENOBase(ENOBase):
     def trace_values(self, u):
-        u1, u2, u3 = self.u123(u)
-        w1, w2, w3 = self.non_linear_weigths(u)
+        u_transformed = self.transform(u)
+        u1, u2, u3 = self.u123(u_transformed)
+        w1, w2, w3 = self.non_linear_weigths(u_transformed)
 
         return w1*u1 + w2*u2 + w3*u3
 
@@ -93,7 +99,8 @@ class StableWENO(WENOBase):
     Reference: D. S. Balsara et al, JCP, 2009
     """
 
-    def __init__(self):
+    def __init__(self, transform = None):
+        super().__init__(transform)
         self.epsilon = 1e-5
 
     def linear_weights(self):
@@ -109,7 +116,8 @@ class OptimalWENO(WENOBase):
     Reference: C.W. Shu, SIAM Review, 2009.
     """
 
-    def __init__(self):
+    def __init__(self, transform = None):
+        super().__init__(transform)
         self.epsilon = 1e-6
 
     def linear_weights(self):
@@ -118,9 +126,9 @@ class OptimalWENO(WENOBase):
     def non_linear_weigths_exponent(self):
         return 2.0
 
+
 class PrimitiveReconstruction(object):
     def __init__(self, model, reconstruction):
-        super().__init__()
         self.model = model
         self.reconstruction = reconstruction
 

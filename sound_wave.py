@@ -13,10 +13,10 @@ class SoundWaveIC(object):
         self.model = model
 
     def __call__(self, grid):
-        x = grid.cell_centers
+        x = grid.cell_centers[:,0]
         mean, sigma, offset = 0.1, 0.1, 0.5
 
-        u0 = np.empty((4,) + x.shape)
+        u0 = np.empty((4, x.shape[0]))
         u0[0,...] = 1.0
         u0[1,...] = 0.0
         u0[2,...] = 0.0
@@ -31,9 +31,9 @@ class AdvectiveIC(object):
         self.model = model
 
     def __call__(self, grid):
-        x = grid.cell_centers
+        x = grid.cell_centers[:,0]
 
-        u0 = np.empty((4,) + x.shape)
+        u0 = np.empty((4, x.shape[0]))
         u0[0,...] = 1.0
         u0[1,...] = 0.3*np.sin(2*np.pi*x)
         u0[2,...] = 0.0
