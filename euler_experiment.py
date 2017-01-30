@@ -42,8 +42,12 @@ class NumericalExperiment(object):
         if hasattr(self, "_grid"):
             return self._grid
         else:
-            self._grid = Grid([0.0, 1.0], self.n_cells, self.n_ghost)
+            self._grid = Grid(self.domain, self.n_cells, self.n_ghost)
             return self._grid
+
+    @property
+    def domain(self):
+        return [0.0, 1.0]
 
     @property
     def fvm(self):
