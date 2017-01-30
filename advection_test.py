@@ -110,11 +110,11 @@ def test_convergence_rate():
         uT = simulation()
         u_ref = simulation.reference_solution
 
-        plt.clf()
-        plt.plot(grid.cell_centers[:,0], uT[0,...])
-        plt.hold(True)
-        plt.plot(grid.cell_centers[:,0], u_ref[0,...])
-        plt.show()
+        # plt.clf()
+        # plt.plot(grid.cell_centers[:,0], uT[0,...])
+        # plt.hold(True)
+        # plt.plot(grid.cell_centers[:,0], u_ref[0,...])
+        # plt.show()
 
         err[k] = l1_error(uT[:,3:-3], u_ref[:,3:-3])
 
