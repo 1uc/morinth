@@ -4,7 +4,7 @@
 import numpy as np
 
 from boundary_conditions import Outflow
-from weno import StableWENO, OptimalWENO, PrimitiveReconstruction
+from weno import StableWENO, OptimalWENO
 from rusanov import Rusanov
 
 from euler_experiment import EulerExperiment

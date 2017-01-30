@@ -125,22 +125,3 @@ class OptimalWENO(WENOBase):
 
     def non_linear_weigths_exponent(self):
         return 2.0
-
-
-class PrimitiveReconstruction(object):
-    def __init__(self, model, reconstruction):
-        self.model = model
-        self.reconstruction = reconstruction
-
-    def __call__(self, u, axis):
-        model = self.model
-        w = model.primitive_variables(u)
-
-        w_left, w_right = self.reconstruction(w, axis)
-
-        u_left = model.conserved_variables(w_left)
-        u_right = model.conserved_variables(w_right)
-
-        return u_left, u_right
-
-

@@ -3,7 +3,7 @@ import numpy as np
 from euler import Euler
 from hllc import HLLC
 from rusanov import Rusanov
-from weno import ENO, OptimalWENO, PrimitiveReconstruction
+from weno import ENO, OptimalWENO
 from runge_kutta import ForwardEuler, SSP3
 
 class FirstOrderReconstruction():
