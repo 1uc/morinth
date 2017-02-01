@@ -3,7 +3,7 @@ import numpy as np
 from euler import Euler, QuasiLinearEuler
 
 def test_eigenvector():
-    model = QuasiLinearEuler(gravity = 0.0, gamma = 1.4)
+    model = QuasiLinearEuler(gravity = 0.0, gamma = 1.4, specific_gas_constant = 1.0)
     w = np.array([1.302, 1.0324, 0.0, 3.092])
 
     for axis in range(2):

@@ -3,7 +3,7 @@ import numpy as np
 class EulerModel(object):
     """Euler equations with gravity."""
 
-    def __init__(self, gamma, gravity, specific_gas_constant = None):
+    def __init__(self, gamma, gravity, specific_gas_constant):
         self.gamma = gamma
         self.gravity = gravity
         self.specific_gas_constant = specific_gas_constant
@@ -40,6 +40,15 @@ class EulerModel(object):
         p = self.pressure(u)
         return self.speed(u) + self.sound_speed(u, p)
 
+    def temperature(self, rho, p):
+        return p/(rho*self.specific_gas_constant)
+
+    def rho(self, p, T):
+        return p/(T*self.specific_gas_constant)
+
+
+    def scale_height(self, T):
+        return T*self.specific_gas_constant/self.gravity
 
 
 class Euler(EulerModel):
