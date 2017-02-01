@@ -18,6 +18,9 @@ class ShallowWater(object):
 
         return f
 
+    def source(self, u, t):
+        return 0.0
+
     def max_eigenvalue(self, u):
         return np.abs(u[1,...]/u[0,...]) + np.sqrt(self.gravity*u[0,...])
 
