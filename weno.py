@@ -136,3 +136,48 @@ class OptimalWENO(WENOBase):
 
     def non_linear_weigths_exponent(self):
         return 2.0
+
+class EquilibriumStencil(object):
+    """Convert the output of an equilibrium transform into 5-stencils."""
+
+    def __init__(self, grid, equilibrium, model):
+        self.grid = grid
+        self.equilibrium = equilibrium
+        self.model = model
+
+    def pre(self, u, is_reversed):
+        return self.equilibrium.point_values(u)
+
+    def stencil(self, w, is_reversed):
+        n_ghost = self.grid.n_ghost
+        x = self.grid.cell_centers[...,0]
+        if is_reversed:
+            x = x[::-1,...]
+
+        w_ref = w[:,2:-2,...]
+        x_ref = x[2:-2,...]
+
+        wa = self.equilibrium.delta(w_ref, x_ref, w[:, :-4,...], x[ :-4,...], is_reversed)
+        wb = self.equilibrium.delta(w_ref, x_ref, w[:,1:-3,...], x[1:-3,...], is_reversed)
+        wc = self.equilibrium.delta(w_ref, x_ref, w[:,2:-2,...], x[2:-2,...], is_reversed)
+        wd = self.equilibrium.delta(w_ref, x_ref, w[:,3:-1,...], x[3:-1,...], is_reversed)
+        we = self.equilibrium.delta(w_ref, x_ref, w[:,4:  ,...], x[4:  ,...], is_reversed)
+
+        return wa, wb, wc, wd, we
+
+    def post(self, w, dwij, is_reversed):
+        n_ghost = self.grid.n_ghost
+        edges = self.grid.edges[...]
+        if is_reversed:
+            edges = edges[::-1,...]
+
+        cell_centers = self.grid.cell_centers[...]
+        if is_reversed:
+            cell_centers = cell_centers[::-1,...]
+
+        w_ref = w[:,2:-2,...]
+        x_ref = cell_centers[2:-2,...,0]
+        xij = edges[3:-2,...,0]
+        wij = self.equilibrium.equilibrium_values(w_ref, x_ref, xij, is_reversed)
+
+        return self.model.conserved_variables(wij + dwij)

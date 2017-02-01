@@ -1,8 +1,11 @@
 import numpy as np
 
-from weno import OptimalWENO
+from weno import OptimalWENO, EquilibriumStencil
 from grid import Grid
 from quadrature import GaussLegendre
+from euler import Euler
+from equilibrium import IsothermalRC
+from gaussian_bump import GaussianBumpIC
 
 import matplotlib.pylab as plt
 
@@ -77,3 +80,27 @@ def test_weno_discontinuous():
             # plt.show()
 
             c(u_plus, u_minus)
+
+def test_weno_well_balanced():
+    model = Euler(gamma = 1.4, gravity = 1.0, specific_gas_constant = 1.0)
+    resolutions = np.array([16]).reshape((-1,1))
+    p_ref, T_ref, x_ref = 1.0, 2.0, 0.0
+
+    for resolution in resolutions:
+        plt.clf()
+
+        grid = Grid([0.0, 1.0], int(resolution), 3)
+        equilibrium = IsothermalRC(grid, model)
+        weno = OptimalWENO(EquilibriumStencil(grid, equilibrium, model))
+
+        ic = GaussianBumpIC(model)
+        ic.amplitude = 0.0
+        u0 = ic(grid)
+        u_plus, u_minus = weno(u0, axis=0)
+        assert np.all(np.abs(u_plus - u_minus) < 1e-13)
+
+        plt.plot(grid.edges[3:-3,0], u_plus[0,:], '>')
+        plt.hold(True)
+        plt.plot(grid.cell_centers[3:-3,0], u0[0,3:-3], 'k_')
+        plt.plot(grid.edges[3:-3,0], u_minus[0,:], '<')
+        plt.show()
