@@ -16,7 +16,7 @@ from time_keeper import PlotEveryNthStep, FixedDuration
 from boundary_conditions import Periodic
 from visualize import SimpleGraph, EulerGraphs, EulerColormaps
 
-from finite_volume_fluxes import FiniteVolumeFluxes, FirstOrderReconstruction
+from finite_volume_fluxes import FVMRateOfChange, FirstOrderReconstruction
 from time_loop import TimeLoop
 from progress_bar import ProgressBar
 
@@ -51,7 +51,11 @@ class NumericalExperiment(object):
 
     @property
     def fvm(self):
-        return FiniteVolumeFluxes(self.grid, self.flux, self.reconstruction)
+        return FVMRateOfChange(self.grid, self.flux, self.reconstruction, self.source)
+
+    @property
+    def source(self):
+        return None
 
     @property
     def single_step(self):

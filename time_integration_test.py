@@ -4,7 +4,6 @@ from burgers import Burgers
 from rusanov import Rusanov
 from grid import Grid
 from boundary_conditions import Periodic
-from finite_volume_fluxes import FiniteVolumeFluxes
 from time_integration import BackwardEuler, BDF2, DIRKa23, DIRKa34
 from runge_kutta import ForwardEuler, SSP2, SSP3, Fehlberg
 from time_loop import TimeLoop

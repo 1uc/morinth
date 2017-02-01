@@ -6,7 +6,7 @@ from advection import Advection
 from rusanov import Rusanov
 from grid import Grid
 from boundary_conditions import Periodic
-from finite_volume_fluxes import FiniteVolumeFluxes
+from finite_volume_fluxes import FVMRateOfChange
 from runge_kutta import ForwardEuler, Fehlberg
 from time_loop import TimeLoop
 from time_keeper import FixedDuration, PlotNever
@@ -23,7 +23,7 @@ class PDE(object):
         self.grid = Grid([[0.0, 1.0], [-1.0, -0.5]], [100, 20], 1)
         self.model = Advection(np.array([1.0, 2.0]))
         self.flux = Rusanov(self.model)
-        self.fvm = FiniteVolumeFluxes(self.grid, self.flux)
+        self.fvm = FVMRateOfChange(self.grid, self.flux, None, None)
         self.bc = Periodic(self.grid)
 
 def test_advection():

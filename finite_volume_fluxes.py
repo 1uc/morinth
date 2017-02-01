@@ -5,22 +5,25 @@ from hllc import HLLC
 from rusanov import Rusanov
 from weno import ENO, OptimalWENO
 from runge_kutta import ForwardEuler, SSP3
+from source_terms import CenteredSourceTerm
 
-class FirstOrderReconstruction():
-    def __call__(self, u, axis):
-        return self.left(u, axis), self.right(u, axis)
+class FVMRateOfChange:
+    def __init__(self, grid, flux, reconstruction, source=None):
+        self.finite_volume_fluxes = FiniteVolumeFluxes(grid, flux, reconstruction)
+        if source is None:
+            self.source = CenteredSourceTerm(flux.model)
+        else:
+            self.source = source
 
-    def left(self, u, axis):
-        if axis == 0:
-            return u[:,:-1,...]
-        elif axis == 1:
-            return u[:,:,:-1]
+    def __call__(self, u, t):
+        dudt = self.finite_volume_fluxes(u, t)
+        dudt += self.source(u, t)
 
-    def right(self, u, axis):
-        if axis == 0:
-            return u[:,1:,...]
-        elif axis == 1:
-            return u[:,:,1:]
+        return dudt
+
+    def pick_time_step(self, u):
+        return self.finite_volume_fluxes.pick_time_step(u)
+
 
 class FiniteVolumeFluxes(object):
     """Rate of change due to the finite volume fluxes."""
@@ -62,43 +65,19 @@ class FiniteVolumeFluxes(object):
     def pick_time_step(self, u):
         return self.grid.dx/np.max(self.model.max_eigenvalue(u));
 
-def prefered_flux(model):
-    return prefer_hllc(model)
 
-def prefer_hllc(model):
-    """Pick a suitable numerical flux."""
-    if isinstance(model, Euler):
-        return HLLC(model)
-    else:
-        return Rusanov(model)
+class FirstOrderReconstruction():
+    def __call__(self, u, axis):
+        return self.left(u, axis), self.right(u, axis)
 
-def prefer_weno_primitive(model):
-    """Pick reconstruction in primitive variables over conservative."""
+    def left(self, u, axis):
+        if axis == 0:
+            return u[:,:-1,...]
+        elif axis == 1:
+            return u[:,:,:-1]
 
-    if isinstance(model, Euler):
-        return PrimitiveReconstruction(model, OptimalWENO())
-    else:
-        return OptimalWENO()
-
-def scheme_o1(model, grid, bc):
-    flux = prefered_flux(model)
-    fvm = FiniteVolumeFluxes(grid, flux)
-    single_step = ForwardEuler(bc, fvm)
-
-    return flux, fvm, single_step
-
-def scheme_weno(model, grid, bc):
-    flux = prefered_flux(model)
-    rc = prefer_weno_primitive(model)
-    fvm = FiniteVolumeFluxes(grid, flux, rc)
-    single_step = SSP3(bc, fvm)
-
-    return flux, fvm, single_step
-
-def scheme_eno(model, grid, bc):
-    flux = prefered_flux(model)
-    rc = ENO()
-    fvm = FiniteVolumeFluxes(grid, flux, rc)
-    single_step = SSP3(bc, fvm)
-
-    return flux, fvm, single_step
+    def right(self, u, axis):
+        if axis == 0:
+            return u[:,1:,...]
+        elif axis == 1:
+            return u[:,:,1:]

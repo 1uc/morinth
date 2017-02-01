@@ -3,7 +3,7 @@ from burgers import Burgers
 from rusanov import Rusanov
 from grid import Grid
 from boundary_conditions import Periodic
-from finite_volume_fluxes import FiniteVolumeFluxes
+from finite_volume_fluxes import FVMRateOfChange
 from time_integration import BackwardEuler
 from runge_kutta import ForwardEuler
 from time_loop import TimeLoop
@@ -24,7 +24,7 @@ class PDE(object):
         self.grid = Grid([0.0, 1.0], 100, 1)
         self.model = Burgers()
         self.flux = Rusanov(self.model)
-        self.fvm = FiniteVolumeFluxes(self.grid, self.flux)
+        self.fvm = FVMRateOfChange(self.grid, self.flux, None, None)
         self.bc = Periodic(self.grid)
 
 
