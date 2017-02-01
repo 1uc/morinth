@@ -5,6 +5,7 @@ import numpy as np
 from euler_experiment import EulerExperiment
 from weno import OptimalWENO
 from boundary_conditions import Periodic
+from math_tools import gaussian
 
 class SoundWaveIC(object):
     """Small smooth pressure bump."""
@@ -99,9 +100,6 @@ class SmoothAdvection(PeriodicEulerExperiment):
     def steps_per_frame(self):
         return 10
 
-
-def gaussian(x, sigma):
-    return np.exp(-(x/sigma)**2)
 
 
 if __name__ == '__main__':
