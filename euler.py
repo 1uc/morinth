@@ -57,14 +57,14 @@ class Euler(EulerModel):
 
         return flux
 
-    def source(self, u, axis):
+    def source(self, u, t):
         """Physical source term of the Euler equations."""
         source = np.empty_like(u)
 
         source[0,...] = 0.0
         source[1,...] = 0.0
         source[2,...] = -u[0,...]*self.gravity
-        source[3,...] = -u[axis+1,...]*self.gravity
+        source[3,...] = -u[1,...]*self.gravity
 
         return source
 
