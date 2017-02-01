@@ -20,6 +20,13 @@ class PlottingBase(object):
 
 
 class SimpleGraph(PlottingBase):
+    def __init__(self, grid, base_name, back_ground=None):
+        super().__init__(grid, base_name)
+        if back_ground is None:
+            self.back_ground = 0.0
+        else:
+            self.back_ground = back_ground
+
     def plot(self, u):
         plt.clf()
 
@@ -32,7 +39,7 @@ class SimpleGraph(PlottingBase):
         plt.xlim((self.grid.edges[n_ghost], self.grid.edges[-n_ghost]))
 
     def transform_scalar(self, u):
-        return u[0, ...]
+        return u[0, ...] - self.back_ground
 
     def easy_style(self):
         return "wo"
@@ -108,26 +115,26 @@ class EulerColormaps(MultiplePlots):
 
 class DensityGraph(SimpleGraph):
     def transform_scalar(self, u):
-        return u[0, ...]
+        return u[0, ...] - self.back_ground
 
 
 class PressureGraph(SimpleGraph):
-    def __init__(self, grid, base_name, model):
-        super().__init__(grid, base_name)
+    def __init__(self, grid, base_name, model, back_ground=None):
+        super().__init__(grid, base_name, back_ground)
         self.model = model
 
     def transform_scalar(self, u):
-        return self.model.pressure(u)
+        return self.model.pressure(u) - self.back_ground
 
 
 class XVelocityGraph(SimpleGraph):
     def transform_scalar(self, u):
-        return u[1, ...]/u[0, ...]
+        return u[1, ...]/u[0, ...] - self.back_ground
 
 
 class YVelocityGraph(SimpleGraph):
     def transform_scalar(self, u):
-        return u[2, ...]/u[0, ...]
+        return u[2, ...]/u[0, ...] - self.back_ground
 
 
 class EulerGraphs(MultiplePlots):
@@ -135,5 +142,14 @@ class EulerGraphs(MultiplePlots):
         density_plot = DensityGraph(grid, base_name + "-rho")
         vx_plot = XVelocityGraph(grid, base_name + "-vx")
         pressure_plot = PressureGraph(grid, base_name + "-p", model)
+
+        self.all_plots = [density_plot, pressure_plot, vx_plot]
+
+
+class EquilibriumGraphs(MultiplePlots):
+    def __init__(self, grid, base_name, model, u0):
+        density_plot = DensityGraph(grid, base_name + "-rho", u0[0,...])
+        vx_plot = XVelocityGraph(grid, base_name + "-vx", u0[1,...]/u0[0,...])
+        pressure_plot = PressureGraph(grid, base_name + "-p", model, model.pressure(u0))
 
         self.all_plots = [density_plot, pressure_plot, vx_plot]
