@@ -54,7 +54,6 @@ def decreasing_criterium(u_plus, u_minus):
     assert np.all(u_plus[:,1:] - u_plus[:,:-1] <= 1e-9)
     assert np.all(u_minus[:,1:] - u_minus[:,:-1] <= 1e-9)
 
-@pytest.mark.skip(reason="This requires visual inspection.")
 def test_weno_discontinuous():
     weno = OptimalWENO()
     resolutions = np.array([10, 20, 40]).reshape((-1,1))
@@ -71,10 +70,10 @@ def test_weno_discontinuous():
             u0 = 1.0/grid.dx*cell_average(grid.edges, f).reshape((1, -1))
 
             u_plus, u_minus = weno(u0, axis=0)
-            plt.plot(grid.edges[3:-3,0], u_plus[0,:], '>')
-            plt.hold(True)
-            plt.plot(grid.cell_centers[3:-3,0], u0[0,3:-3], 'k_')
-            plt.plot(grid.edges[3:-3,0], u_minus[0,:], '<')
-            plt.show()
+            # plt.plot(grid.edges[3:-3,0], u_plus[0,:], '>')
+            # plt.hold(True)
+            # plt.plot(grid.cell_centers[3:-3,0], u0[0,3:-3], 'k_')
+            # plt.plot(grid.edges[3:-3,0], u_minus[0,:], '<')
+            # plt.show()
 
             c(u_plus, u_minus)

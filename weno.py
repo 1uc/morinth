@@ -10,15 +10,11 @@ class ENOBase(object):
         """Return reconstructed values U-, U+."""
 
         # Shuffle x-axis to the last position.
-        if axis == 0 and u.ndim == 3:
-            u = u.transpose((0, 2, 1))
+        if axis == 1 and u.ndim == 3:
+            raise Exception("No, 2D WENO should not work, yet.")
 
-        u_plus = self.trace_values(u)[...,:-1]
-        u_minus = self.trace_values(u[...,::-1])[...,-2::-1]
-
-        if axis == 0 and u.ndim == 3:
-            u_plus = u_plus.transpose((0, 2, 1))
-            u_minus = u_minus.transpose((0, 2, 1))
+        u_plus = self.trace_values(u, is_reversed=False)[...,:-1]
+        u_minus = self.trace_values(u[...,::-1], is_reversed=True)[...,-2::-1]
 
         return u_plus, u_minus
 
@@ -44,22 +40,35 @@ class ENOBase(object):
     def stencil(self, u1, u2, u3, alpha):
         return alpha[0]*u1 + alpha[1]*u2 + alpha[2]*u3
 
-    def transform(self, u):
+    def pre_transform(self, u, is_reversed):
+        if self._transform is None:
+            return u
+        else:
+            return self._transform.pre(u, is_reversed)
+
+    def post_transform(self, u_transformed, u_rc, is_reversed):
+        if self._transform is None:
+            return u_rc
+        else:
+            return self._transform.post(u_transformed, u_rc, is_reversed)
+
+    def five_stencil(self, u, is_reversed):
         if self._transform is None:
             return u[:,:-4], u[:,1:-3], u[:,2:-2], u[:,3:-1], u[:,4:]
         else:
-            return self._transform(u)
+            return self._transform.stencil(u, is_reversed)
 
 
 class ENO(ENOBase):
     """Third order ENO reconstruction."""
 
-    def trace_values(self, u):
+    def trace_values(self, u, is_reversed):
         """Compute the i+1/2 ENO trace value over the last axis."""
 
-        u_transformed = self.transform(u)
-        u1, u2, u3 = self.u123(u_transformed)
-        beta1, beta2, beta3 = self.smoothness_indicators(u_transformed)
+        u_transformed = self.pre_transform(u, is_reversed)
+        u_stencil = self.five_stencil(u_transformed, is_reversed)
+        u1, u2, u3 = self.u123(u_stencil)
+        beta1, beta2, beta3 = self.smoothness_indicators(u_stencil)
 
         beta_min = np.minimum(np.minimum(beta1, beta2), beta3)
 
@@ -67,16 +76,18 @@ class ENO(ENOBase):
         u_rc = np.where(beta2 == beta_min, u2, u_rc)
         u_rc = np.where(beta3 == beta_min, u3, u_rc)
 
-        return u_rc
+        return self.post_transform(u_transformed, u_rc, is_reversed)
 
 
 class WENOBase(ENOBase):
-    def trace_values(self, u):
-        u_transformed = self.transform(u)
-        u1, u2, u3 = self.u123(u_transformed)
-        w1, w2, w3 = self.non_linear_weigths(u_transformed)
+    def trace_values(self, u, is_reversed):
+        u_transformed = self.pre_transform(u, is_reversed)
+        u_stencil = self.five_stencil(u_transformed, is_reversed)
+        u1, u2, u3 = self.u123(u_stencil)
+        w1, w2, w3 = self.non_linear_weigths(u_stencil)
 
-        return w1*u1 + w2*u2 + w3*u3
+        u_rc = w1*u1 + w2*u2 + w3*u3
+        return self.post_transform(u_transformed, u_rc, is_reversed)
 
     def non_linear_weigths(self, u):
         r = self.non_linear_weigths_exponent()
