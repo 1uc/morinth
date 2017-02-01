@@ -111,15 +111,23 @@ class NumericalExperiment(object):
         if self.order == 1:
             return FirstOrderReconstruction()
         elif self.order == 3:
-            return ENO()
+            return self.eno
         elif self.order == 5:
-            return OptimalWENO()
+            return self.weno
         else:
             raise Exception("Invalid order [{:s}].".format(self.order))
 
     @property
     def progress_bar(self):
         return ProgressBar(10)
+
+    @property
+    def eno(self):
+        return ENO()
+
+    @property
+    def weno(self):
+        return OptimalWENO()
 
 
 class AdvectionExperiment(NumericalExperiment):
