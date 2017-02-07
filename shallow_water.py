@@ -18,7 +18,7 @@ class ShallowWater(object):
 
         return f
 
-    def source(self, u, t):
+    def source(self, u):
         return 0.0
 
     def max_eigenvalue(self, u):

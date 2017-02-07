@@ -66,7 +66,7 @@ class Euler(EulerModel):
 
         return flux
 
-    def source(self, u, t):
+    def source(self, u):
         """Physical source term of the Euler equations."""
         source = np.empty_like(u)
 

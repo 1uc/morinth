@@ -1,30 +1,65 @@
 import numpy as np
 
-class CenteredSourceTerm:
+class SourceTerm:
+    def __init__(self):
+        self.needs_edge_source = hasattr(self, "edge_source")
+        self.needs_volume_source = hasattr(self, "volume_source")
+
+class CenteredSourceTerm(SourceTerm):
     def __init__(self, model):
+        super().__init__()
+
         self.model = model
 
-    def __call__(self, u, t):
-        return self.model.source(u, t)
+    def volume_source(self, u_bar, u_left=None, u_right=None):
+        """Compute the balanced source term of the Euler equations.
+
+        Arguments:
+              u_bar : cell-average of the conserved variables
+             u_left : ---
+            u_right : ---
+        """
+        return self.model.source(u_bar)
 
 
-class BalancedSourceTerm:
+class BalancedSourceTerm(SourceTerm):
     def __init__(self, grid, model, equilibrium):
+        super().__init__()
+
         self.grid = grid
         self.model = model
         self.equilibrium = equilibrium
 
-    def __call__(self, u, t):
-        w_ref = self.equilibrium.point_values(u)
+    def edge_source(self, u_bar, u_left, u_right, axis):
+        """Compute the balanced source term of the Euler equations.
+
+        Parameters
+        ----------
+               u_bar : array_like
+                       cell-average of the conserved variables
+
+              u_left : array_like
+                       point-value of the conserved variables at the left
+                       boundary
+
+             u_right : array_like
+                       point-value of the conserved variables at the right
+                       boundary
+
+                axis : int
+                       direction for which to compute the source term
+        """
         x_ref = self.grid.cell_centers[...,0]
-        x_upper = self.grid.edges[1:,...,0]
-        x_lower = self.grid.edges[:-1,...,0]
+        x_right = self.grid.edges[1:,...,0]
+        x_left = self.grid.edges[:-1,...,0]
 
-        p_upper = self.equilibrium.equilibrium_values(w_ref, x_ref, x_upper)[3,...]
-        p_lower = self.equilibrium.equilibrium_values(w_ref, x_ref, x_lower)[3,...]
+        rho_point, p_point, T_point, _, _ = self.equilibrium.point_values(u_bar)
 
-        dudt = np.zeros_like(u)
-        dudt[1,...] = (p_upper - p_lower)/self.grid.dx
+        rho_left, p_left = self.equilibrium.extrapolate(p_point, T_point, x_ref, x_left)
+        rho_right, p_right = self.equilibrium.extrapolate(p_point, T_point, x_ref, x_right)
+
+        dudt = np.zeros_like(u_bar)
+        dudt[1,...] = (p_right - p_left)/self.grid.dx
         dudt[3,...] = 0.0
 
         return dudt

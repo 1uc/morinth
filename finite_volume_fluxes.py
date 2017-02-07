@@ -7,60 +7,63 @@ from weno import ENO, OptimalWENO
 from runge_kutta import ForwardEuler, SSP3
 from source_terms import CenteredSourceTerm
 
+from coding_tools import with_default
+
 class FVMRateOfChange:
-    def __init__(self, grid, flux, reconstruction, source=None):
-        self.finite_volume_fluxes = FiniteVolumeFluxes(grid, flux, reconstruction)
-        if source is None:
-            self.source = CenteredSourceTerm(flux.model)
-        else:
-            self.source = source
-
-    def __call__(self, u, t):
-        dudt = self.finite_volume_fluxes(u, t)
-        dudt += self.source(u, t)
-
-        return dudt
-
-    def pick_time_step(self, u):
-        return self.finite_volume_fluxes.pick_time_step(u)
-
-
-class FiniteVolumeFluxes(object):
-    """Rate of change due to the finite volume fluxes."""
-
-    def __init__(self, grid, flux, reconstruction = None):
+    def __init__(self, grid, flux, reconstruction=None, source=None):
         self.grid = grid
         self.flux = flux
         self.model = flux.model
-
-        if reconstruction is None:
-            reconstruction = FirstOrderReconstruction()
-
-        self.reconstruction = reconstruction
+        self.reconstruction = with_default(reconstruction, FirstOrderReconstruction())
+        self.source = with_default(source, CenteredSourceTerm(flux.model))
 
     def __call__(self, u, t):
-        """Compute the rate of change 'dudt' due to FVM."""
         n_ghost = self.grid.n_ghost
         I = slice(n_ghost, -n_ghost)
 
         dudt = np.zeros_like(u)
-        dudt[:,I,...] = self.x_flux(u, t)
+
+        # NOTATION:
+        # The `_plus` trace in from the left, `_minus` is from the right of the
+        # interface.
+        # The `_left` trace is left of the cell, and `_right` is right of the
+        # cell.
+        u_plus, u_minus = self.reconstruction(u, axis=0)
+        dudt[:,I,...] = self.x_flux(u, u_plus, u_minus)
+
+        if self.source.needs_edge_source:
+            dudt[:,I,...] += self.x_source(u, u_plus, u_minus)
+
 
         if self.grid.n_dims == 2:
-            dudt[:,:,I] += self.y_flux(u, t)
+            u_plus, u_minus = self.reconstruction(u, axis=1)
+            dudt[:,:,I] += self.y_flux(u, u_plus, u_minus)
+
+            if self.source.needs_edge_source:
+                dudt[:,:,I] += self.y_source(u, u_plus, u_minus)
+
+        if self.source.needs_volume_source:
+            dudt += self.source.volume_source(u, u_plus, u_minus)
 
         return dudt
 
-    def x_flux(self, u, t):
-        u_left, u_right = self.reconstruction(u, axis=0)
-        flux = self.flux(u_left, u_right, axis=0)
+    def x_flux(self, u, u_plus, u_minus):
+        flux = self.flux(u_plus, u_minus, axis=0)
         return -1.0/self.grid.dx * (flux[:,1:,...] - flux[:,:-1,...])
 
-    def y_flux(self, u, t):
-        u_left, u_right = self.reconstruction(u, axis=1)
-        flux = self.flux(u_left, u_right, axis=1)
+    def x_source(self, u, u_plus, u_minus):
+        n_ghost = self.grid.n_ghost
+        source = self.source.edge_source(u, u_plus, u_minus, axis=0)
+        return source[:,n_ghost:-n_ghost,...]
 
+    def y_flux(self, u, u_plus, u_minus):
+        flux = self.flux(u_plus, u_minus, axis=1)
         return -1.0/self.grid.dy * (flux[:,:,1:] - flux[:,:,:-1])
+
+    def y_source(self, u, u_plus, u_minus):
+        n_ghost = self.grid.n_ghost
+        source = self.source.edge_source(u, u_plus, u_minus, axis=1)
+        return source[:,...,n_ghost:-n_ghost]
 
     def pick_time_step(self, u):
         return self.grid.dx/np.max(self.model.max_eigenvalue(u));
