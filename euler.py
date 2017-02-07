@@ -46,8 +46,8 @@ class EulerModel(object):
     def rho(self, p, T):
         return p/(T*self.specific_gas_constant)
 
-
     def scale_height(self, T):
+        """Isothermal scale height of the atmosphere."""
         return T*self.specific_gas_constant/self.gravity
 
 
@@ -77,8 +77,13 @@ class Euler(EulerModel):
 
         return source
 
-    def pressure(self, u):
-        return (self.gamma-1.0)*(u[3,...] - self.kinetic_energy(u))
+    def pressure(self, u=None, rho=None, T=None):
+        if rho is not None and T is not None:
+            return rho*self.specific_gas_constant*T
+        elif u is not None:
+            return (self.gamma-1.0)*(u[3,...] - self.kinetic_energy(u))
+        else:
+            raise Exception("Invalid combination of arguments.")
 
     def kinetic_energy(self, u):
         return 0.5*(u[1,...]**2 + u[2,...]**2)/u[0,...]
@@ -157,7 +162,6 @@ class QuasiLinearEuler(EulerModel):
         mat[3,axis+1,...] = rho_a_square
 
         return mat
-
 
     def eigenvalues(self, w, axis):
         """Return eigenvalues of the Euler equation in primitive variables."""
