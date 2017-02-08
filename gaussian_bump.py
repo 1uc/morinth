@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
+import pickle
 import numpy as np
+import matplotlib.pyplot as plt
 
 from equilibrium import IsothermalEquilibrium
 from euler_experiment import EulerExperiment
 from boundary_conditions import Outflow, IsothermalOutflow
-from visualize import EquilibriumGraphs
+from visualize import EquilibriumGraphs, DensityGraph
 from weno import OptimalWENO, EquilibriumStencil
 from source_terms import BalancedSourceTerm
 from math_tools import gaussian, l1_error, convergence_rate
@@ -94,9 +96,85 @@ class GaussianBump(EulerExperiment):
 
     @property
     def steps_per_frame(self):
-        return 2
+        return 1
 
+class GaussianBumpConvergence(GaussianBump):
+    @property
+    def plotting_steps(self):
+        return PlotNever()
+
+    @property
+    def output_filename(self):
+        return "img/gaussian_bump_{:05d}".format(int(self.n_cells))
+
+def compute_reference_solution():
+    gaussian_bump = GaussianBumpConvergence()
+    gaussian_bump.n_cells = 2**14 + 6
+    grid = gaussian_bump.grid
+
+    u0 = gaussian_bump.initial_condition.back_ground(grid)
+    u_ref = gaussian_bump()
+
+    np.save("data/gaussian_bump_background.npy", u0)
+    np.save("data/gaussian_bump_reference.npy", u_ref)
+
+    with open("data/gaussian_bump_grid.pkl", 'wb') as f:
+        pickle.dump(grid, f)
+
+    return u0, u_ref, grid
+
+def load_reference_solution():
+    u0_ref = np.load("data/gaussian_bump_background.npy")
+    u_ref = np.load("data/gaussian_bump_reference.npy")
+
+    with open("data/gaussian_bump_grid.pkl", 'rb') as f:
+        grid = pickle.load(f)
+
+    return u0_ref, u_ref, grid
+
+def down_sample(u_fine, grid_fine, grid_coarse):
+    """Compute cell-averages of `u_fine` on the coarse grid."""
+    if grid_fine.n_dims == 2:
+        raise Exception("Needs to be implemented.")
+
+    ngf = grid_fine.n_ghost
+    ngc = grid_coarse.n_ghost
+
+    ncf = grid_fine.n_cells[0] - 2*ngf
+    ncc = grid_coarse.n_cells[0] - 2*ngc
+    r = ncf // ncc
+    assert r*ncc == ncf
+
+    shape = (u_fine.shape[0], -1, r)
+    u_coarse = np.mean(u_fine[:,ngf:-ngf].reshape(shape), axis=-1)
+
+    return u_coarse
 
 if __name__ == '__main__':
-    gaussian_bump = GaussianBump()
-    gaussian_bump()
+    # u0_ref, u_ref, grid = compute_reference_solution()
+    u0_ref, u_ref, grid_ref = load_reference_solution()
+    du_ref = u_ref - u0_ref
+
+    all_resolutions = 2**np.arange(4, 10) + 6
+
+    err = np.empty((4, all_resolutions.size))
+    for l, res in enumerate(np.nditer(all_resolutions)):
+        gaussian_bump = GaussianBumpConvergence()
+        gaussian_bump.n_cells = res
+        grid = gaussian_bump.grid
+        n_ghost = grid.n_ghost
+
+        u0 = gaussian_bump.initial_condition.back_ground(grid)
+        u = gaussian_bump()
+
+        du = u - u0
+
+        ic = gaussian_bump.initial_condition
+        du_ref_c = down_sample(du_ref, grid_ref, grid)
+        err[:,l] = l1_error(du[:,n_ghost:-n_ghost], du_ref_c)
+
+    rho_rate = convergence_rate(err[0,...], all_resolutions-6)
+    E_int_rate = convergence_rate(err[3,...], all_resolutions-6)
+
+    print(rho_rate)
+    print(E_int_rate)
