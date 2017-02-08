@@ -36,7 +36,7 @@ class SimpleGraph(PlottingBase):
 
     def xlim(self):
         n_ghost = self.grid.n_ghost
-        plt.xlim((self.grid.edges[n_ghost], self.grid.edges[-n_ghost]))
+        plt.xlim((self.grid.edges[0,0], self.grid.edges[-1,0]))
 
     def transform_scalar(self, u):
         return u[0, ...] - self.back_ground
