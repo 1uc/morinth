@@ -4,13 +4,14 @@ from weno import OptimalWENO, EquilibriumStencil
 from grid import Grid
 from quadrature import GaussLegendre
 from euler import Euler
-from equilibrium import IsothermalRC
+from equilibrium import IsothermalEquilibrium
 from gaussian_bump import GaussianBumpIC
 
 import matplotlib.pylab as plt
 
 import pytest
 from testing_tools import mark_manual
+from math_tools import convergence_rate, linf_error
 
 def sinusoidal(x):
     fx = np.sin(2.0*np.pi*x) * np.cos(2.0*np.pi*x)**2

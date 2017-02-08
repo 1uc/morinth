@@ -8,7 +8,7 @@ from time_integration import BackwardEuler, BDF2, DIRKa23, DIRKa34
 from runge_kutta import ForwardEuler, SSP2, SSP3, Fehlberg
 from time_loop import TimeLoop
 from time_keeper import FixedDuration, PlotNever
-from testing_tools import convergence_rate
+from math_tools import convergence_rate
 
 
 class MockROC(object):

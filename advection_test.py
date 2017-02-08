@@ -11,7 +11,7 @@ from runge_kutta import ForwardEuler, Fehlberg
 from time_loop import TimeLoop
 from time_keeper import FixedDuration, PlotNever
 from quadrature import GaussLegendre
-from testing_tools import l1_error, convergence_rate
+from math_tools import l1_error, convergence_rate
 from euler_experiment import AdvectionExperiment
 from progress_bar import SilentProgressBar
 from weno import OptimalWENO
