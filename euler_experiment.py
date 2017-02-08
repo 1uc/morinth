@@ -76,8 +76,11 @@ class NumericalExperiment(object):
         if hasattr(self, "_time_keeper"):
             return self._time_keeper
         else:
-            self._time_keeper = FixedDuration(self.final_time, self.needs_baby_steps)
+            self._time_keeper = self._make_time_keeper()
             return self._time_keeper
+
+    def _make_time_keeper(self):
+        return FixedDuration(self.final_time, self.needs_baby_steps)
 
     @property
     def needs_baby_steps(self):
