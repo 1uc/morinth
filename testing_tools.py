@@ -11,4 +11,7 @@ def l1_error(approximate, reference):
         err = np.mean(err, axis = -1)
 
     return err
+import pytest
 
+mark_manual = pytest.mark.skipif(not pytest.config.getoption("--run-manual"),
+                                 reason="pass `--run-manual` to run this")

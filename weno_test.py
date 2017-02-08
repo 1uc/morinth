@@ -10,6 +10,7 @@ from gaussian_bump import GaussianBumpIC
 import matplotlib.pylab as plt
 
 import pytest
+from testing_tools import mark_manual
 
 def sinusoidal(x):
     fx = np.sin(2.0*np.pi*x) * np.cos(2.0*np.pi*x)**2
@@ -81,6 +82,7 @@ def test_weno_discontinuous():
 
             c(u_plus, u_minus)
 
+@mark_manual
 def test_weno_well_balanced():
     model = Euler(gamma = 1.4, gravity = 1.0, specific_gas_constant = 1.0)
     resolutions = np.array([16]).reshape((-1,1))
