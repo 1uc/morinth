@@ -23,12 +23,13 @@ class CenteredSourceTerm(SourceTerm):
 
 
 class BalancedSourceTerm(SourceTerm):
-    def __init__(self, grid, model, equilibrium):
+    def __init__(self, grid, model, equilibrium, order=4):
         super().__init__()
 
         self.grid = grid
         self.model = model
         self.equilibrium = equilibrium
+        self.order = order
 
     def edge_source(self, u_bar, u_left, u_right, axis):
         """Compute the balanced source term of the Euler equations.
@@ -49,6 +50,16 @@ class BalancedSourceTerm(SourceTerm):
                 axis : int
                        direction for which to compute the source term
         """
+        assert axis == 0
+
+        if self.order == 2:
+            return self.edge_source_o2(u_bar)
+        elif self.order == 4:
+            return self.edge_source_o4(u_bar, u_left, u_right, axis)
+
+
+    def edge_source_o4(self, u_bar, u_left, u_right):
+
         x_ref = self.grid.cell_centers[...,0]
         x_right = self.grid.edges[1:,...,0]
         x_left = self.grid.edges[:-1,...,0]

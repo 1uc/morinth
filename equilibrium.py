@@ -1,46 +1,76 @@
 import numpy as np
 
 class IsothermalEquilibrium:
-    def __init__(self, model, p_ref, T_ref, x_ref):
-        self.model = model
-        self.p_ref = p_ref
-        self.T_ref = T_ref
-        self.x_ref = x_ref
-
-    def __call__(self, x):
-        scale_height = self.model.scale_height(self.T_ref)
-
-        p = self.p_ref*np.exp(-(x - self.x_ref)/scale_height)
-        rho = self.model.rho(p=p, T=self.T_ref)
-
-        return rho, p
-
-class IsothermalRC:
     """Equilibrium reconstruction of point-values."""
 
     def __init__(self, grid, model):
         self.grid = grid
         self.model = model
 
-    def point_values(self, u):
-        return self.model.primitive_variables(u)
+    def cell_averages(self, u_point):
+        model = self.model
 
-    def equilibrium_values(self, w_ref, x_ref, x, is_reversed=False):
-        w_wb = np.empty((4,) + x.shape)
+        rho = u_point[0,...]
+        p = model.pressure(u=u_point)
+        T = model.temperature(rho=rho, p=p)
+        H = model.scale_height(T)
+        iH2 = 1.0/(H*H)
+        dx2_24 = self.grid.dx * self.grid.dx / 24.0
 
-        p_ref = w_ref[3,...]
-        T_ref = self.model.temperature(rho=w_ref[0,...], p=w_ref[3,...])
+        rho_bar = rho*(1.0 + dx2_24*iH2)
+        p_bar = model.pressure(rho=rho_bar, T=T)
 
-        equilibrium = IsothermalEquilibrium(self.model, p_ref, T_ref, x_ref)
+        u_bar = np.empty_like(u_point)
+        u_bar[0,...] = rho_bar
+        u_bar[1,...] = u_point[1,...]
+        u_bar[2,...] = u_point[2,...]
+        u_bar[3,...] = model.internal_energy(p=p_bar)
 
-        w_wb[0,...], w_wb[3,...] = equilibrium(x)
+        return u_bar
 
-        w_wb[1,...] = w_ref[1,...]
-        w_wb[2,...] = w_ref[2,...]
+    def point_values(self, u_bar_ref):
+        model = self.model
 
-        return w_wb
+        p_tilda_ref = model.pressure(u_bar_ref)
+        T_ref = model.temperature(rho=u_bar_ref[0,...], p=p_tilda_ref)
+        H = model.scale_height(T_ref)
+        iH2 = 1.0/(H*H)
+        dx2_24 = self.grid.dx*self.grid.dx/24.0
 
-    def delta(self, w_ref, x_ref, w, x, is_reversed):
+        rho_point = u_bar_ref[0,...]/(1 + dx2_24*iH2)
+        p_point = model.pressure(rho=rho_point, T=T_ref)
+
+        return rho_point, p_point, T_ref, iH2, dx2_24
+
+    def extrapolate(self, p_ref, T_ref, x_ref, x):
+        scale_height = self.model.scale_height(T_ref)
+
+        p = p_ref*np.exp(-(x - x_ref)/scale_height)
+        rho = self.model.rho(p=p, T=T_ref)
+
+        return rho, p
+
+    def reconstruct(self, u_bar_ref, x_ref, x, is_reversed=False):
+        model = self.model
+
+        rho_point, p_point, T_ref, iH2, dx2_24 = self.point_values(u_bar_ref)
+
+        rho_eq, p_eq = self.extrapolate(p_point, T_ref, x_ref, x)
+        E_int_eq = model.internal_energy(p=p_eq)
+
+        rho_eq_bar = rho_eq + dx2_24*rho_eq*iH2
+        p_eq_bar = model.pressure(rho=rho_eq_bar, T=T_ref)
+        E_int_eq_bar = model.internal_energy(p=p_eq_bar)
+
+        u_wb = np.empty((4,) + x.shape)
+        u_wb[0,...] = rho_eq_bar
+        u_wb[1,...] = 0.0
+        u_wb[2,...] = 0.0
+        u_wb[3,...] = E_int_eq_bar
+
+        return u_wb
+
+    def delta(self, u_ref, x_ref, u, x, is_reversed):
         """Compute the difference from equilibrium."""
-        dw = w - self.equilibrium_values(w_ref, x_ref, x, is_reversed)
-        return dw
+        du = u - self.reconstruct(u_ref, x_ref, x, is_reversed)
+        return du

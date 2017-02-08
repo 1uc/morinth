@@ -34,20 +34,26 @@ def weno_error(resolution):
     u_plus, u_minus = weno(u0, axis=0)
 
     xij = grid.edges
-    uref = sinusoidal(xij).reshape((1, -1))
+    u_ref = sinusoidal(xij).reshape((1, -1))
 
-    err_plus = np.max(np.abs(u_plus - uref[:,3:-3]))
-    err_minus = np.max(np.abs(u_minus - uref[:,3:-3]))
+    err_plus = linf_error(u_plus, u_ref[:,3:-3])
+    err_minus = linf_error(u_minus, u_ref[:,3:-3])
 
     return err_plus, err_minus
 
 def test_weno_smooth():
     resolutions = np.array([16, 26, 46, 86, 166]).reshape((-1,1))
-    err = np.array([weno_error(int(res)) for res in list(resolutions)])
+    err_plus = np.empty((1, resolutions.size))
+    err_minus = np.empty_like(err_plus)
 
-    rate = np.log(err[:-1,:]/err[1:,:]) / np.log((resolutions[:-1,:] - 6)/(resolutions[1:,:] - 6))
-    rate = np.max(np.abs(rate), axis=0)
-    assert np.all(np.abs(rate - 5.0) < 0.1), "Observed rate: " + str(rate)
+    for l, res in enumerate(np.nditer(resolutions)):
+        err_plus[:,l], err_minus[:,l] = weno_error(res)
+
+    rate_minus = convergence_rate(err_plus, resolutions-6)
+    rate_plus = convergence_rate(err_minus, resolutions-6)
+    rate = np.maximum(np.max(np.abs(rate_plus), axis=0),
+                      np.max(np.abs(rate_minus), axis=0))
+    assert np.abs(np.max(np.abs(rate)) - 5.0) < 0.1, "Observed rate: " + str(rate)
 
 def increasing_criterium(u_plus, u_minus):
     assert np.all(u_plus <= u_minus + 1e-9)
@@ -92,8 +98,8 @@ def test_weno_well_balanced():
     for resolution in resolutions:
         plt.clf()
 
-        equilibrium = IsothermalRC(grid, model)
         grid = Grid([0.0, 1.0], resolution, 3)
+        equilibrium = IsothermalEquilibrium(grid, model)
         weno = OptimalWENO(EquilibriumStencil(grid, equilibrium, model))
 
         ic = GaussianBumpIC(model)

@@ -146,26 +146,26 @@ class EquilibriumStencil(object):
         self.model = model
 
     def pre(self, u, is_reversed):
-        return self.equilibrium.point_values(u)
+        return u
 
-    def stencil(self, w, is_reversed):
+    def stencil(self, u, is_reversed):
         n_ghost = self.grid.n_ghost
         x = self.grid.cell_centers[...,0]
         if is_reversed:
             x = x[::-1,...]
 
-        w_ref = w[:,2:-2,...]
+        u_ref = u[:,2:-2,...]
         x_ref = x[2:-2,...]
 
-        wa = self.equilibrium.delta(w_ref, x_ref, w[:, :-4,...], x[ :-4,...], is_reversed)
-        wb = self.equilibrium.delta(w_ref, x_ref, w[:,1:-3,...], x[1:-3,...], is_reversed)
-        wc = self.equilibrium.delta(w_ref, x_ref, w[:,2:-2,...], x[2:-2,...], is_reversed)
-        wd = self.equilibrium.delta(w_ref, x_ref, w[:,3:-1,...], x[3:-1,...], is_reversed)
-        we = self.equilibrium.delta(w_ref, x_ref, w[:,4:  ,...], x[4:  ,...], is_reversed)
+        ua = self.equilibrium.delta(u_ref, x_ref, u[:, :-4,...], x[ :-4,...], is_reversed)
+        ub = self.equilibrium.delta(u_ref, x_ref, u[:,1:-3,...], x[1:-3,...], is_reversed)
+        uc = self.equilibrium.delta(u_ref, x_ref, u[:,2:-2,...], x[2:-2,...], is_reversed)
+        ud = self.equilibrium.delta(u_ref, x_ref, u[:,3:-1,...], x[3:-1,...], is_reversed)
+        ue = self.equilibrium.delta(u_ref, x_ref, u[:,4:  ,...], x[4:  ,...], is_reversed)
 
-        return wa, wb, wc, wd, we
+        return ua, ub, uc, ud, ue
 
-    def post(self, w, dwij, is_reversed):
+    def post(self, u, duij, is_reversed):
         n_ghost = self.grid.n_ghost
         edges = self.grid.edges[...]
         if is_reversed:
@@ -175,9 +175,12 @@ class EquilibriumStencil(object):
         if is_reversed:
             cell_centers = cell_centers[::-1,...]
 
-        w_ref = w[:,2:-2,...]
         x_ref = cell_centers[2:-2,...,0]
         xij = edges[3:-2,...,0]
-        wij = self.equilibrium.equilibrium_values(w_ref, x_ref, xij, is_reversed)
+        _, p_ref, T_ref, _, _ = self.equilibrium.point_values(u[:,2:-2,...])
 
-        return self.model.conserved_variables(wij + dwij)
+        uij = np.zeros_like(duij)
+        uij[0,...], p_ij = self.equilibrium.extrapolate(p_ref, T_ref, x_ref, xij)
+        uij[3,...] = self.model.internal_energy(p_ij)
+
+        return uij + duij

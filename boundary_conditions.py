@@ -1,5 +1,5 @@
 import numpy as np
-from equilibrium import IsothermalRC
+from equilibrium import IsothermalEquilibrium
 
 class BoundaryCondition(object):
     def __init__(self, grid):
@@ -35,10 +35,10 @@ class Outflow(BoundaryCondition):
             u[:,:,-n_ghost:] = u[:,:,-n_ghost-1].reshape(shape)
 
 
-class HydrostaticOutflow(BoundaryCondition):
-    def __init__(self, grid, equilibrium):
+class IsothermalOutflow(BoundaryCondition):
+    def __init__(self, grid, model):
         self.grid = grid
-        self.equilibrium = equilibrium
+        self.equilibrium = IsothermalEquilibrium(grid, model)
 
     def __call__(self, u):
         n_ghost = self.grid.n_ghost
@@ -46,14 +46,8 @@ class HydrostaticOutflow(BoundaryCondition):
         self.set_layer(u, -n_ghost-1, slice(-n_ghost, None))
 
     def set_layer(self, u, i_inner, i_outer):
-        w_ref = self.equilibrium.point_values(u[:,i_inner,...])
+        u_ref = u[:,i_inner,...]
         x_ref = self.grid.cell_centers[i_inner,...,0]
         x = self.grid.cell_centers[i_outer,...,0]
 
-        w = self.equilibrium.equilibrium_values(w_ref, x_ref, x)
-        u[:,i_outer,...] = self.equilibrium.model.conserved_variables(w)
-
-
-class IsothermalOutflow(HydrostaticOutflow):
-    def __init__(self, grid, model):
-        super().__init__(grid, IsothermalRC(grid, model))
+        u[:,i_outer,...] = self.equilibrium.reconstruct(u_ref, x_ref, x)

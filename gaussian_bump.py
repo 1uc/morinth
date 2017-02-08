@@ -3,49 +3,57 @@
 
 import numpy as np
 
-from equilibrium import IsothermalEquilibrium, IsothermalRC
+from equilibrium import IsothermalEquilibrium
 from euler_experiment import EulerExperiment
 from boundary_conditions import Outflow, IsothermalOutflow
 from visualize import EquilibriumGraphs
 from weno import OptimalWENO, EquilibriumStencil
 from source_terms import BalancedSourceTerm
-from math_tools import gaussian
+from math_tools import gaussian, l1_error, convergence_rate
+from time_keeper import FixedSteps, PlotNever
 
 class GaussianBumpIC(object):
     def __init__(self, model):
         self.model = model
-        self.amplitude = 0.0
+        self.amplitude = 1.0e-5
         self.sigma = 0.05
-        self.p_ref = 1.0
-        self.T_ref = 1.0
         self.x_ref = 0.0
         self.x_mid = 0.5
+        self.rho_ref = 1.0
+        self.p_ref = 1.0
+        E_int_ref = model.internal_energy(p=self.p_ref)
+        self.u_ref = np.array([self.rho_ref, 0.0, 0.0, E_int_ref])
 
     def __call__(self, grid):
         x = grid.cell_centers[:,0]
 
-        w0 = self.back_ground(grid)
-        w0[3,...] = w0[3,...]*(1.0 + self.amplitude*gaussian(x - self.x_mid, self.sigma))
+        u0 = self.back_ground(grid)
+        alpha = 1.0 + self.amplitude*gaussian(x - self.x_mid, self.sigma)
+        # u0[0,...] = u0[0,...]/alpha
+        u0[3,...] = u0[3,...]*alpha
 
-        return self.model.conserved_variables(w0)
+        return u0
 
     def back_ground(self, grid):
         x = grid.cell_centers[:,0]
-        equilibrium = IsothermalEquilibrium(self.model, self.p_ref, self.T_ref, self.x_ref)
+        equilibrium = IsothermalEquilibrium(model=self.model, grid=grid)
+        u_bar_ref = equilibrium.cell_averages(self.u_ref)
 
-        w0 = np.zeros((4, grid.n_cells[0]))
-        w0[0,...], w0[3,...] = equilibrium(x)
-        return w0
+        return equilibrium.reconstruct(u_bar_ref, self.x_ref, x)
 
 
 class GaussianBump(EulerExperiment):
     @property
     def final_time(self):
-        return 0.1
+        return 0.2
 
     @property
     def n_cells(self):
-        return 200
+        return getattr(self, "_n_cells", 200)
+
+    @n_cells.setter
+    def n_cells(self, new_value):
+        self._n_cells = new_value
 
     @property
     def initial_condition(self):
@@ -66,7 +74,6 @@ class GaussianBump(EulerExperiment):
     @property
     def weno(self):
         return OptimalWENO(EquilibriumStencil(self.grid, self.equilibrium, self.model))
-        # return OptimalWENO()
 
     @property
     def source(self):
@@ -74,12 +81,11 @@ class GaussianBump(EulerExperiment):
 
     @property
     def equilibrium(self):
-        return IsothermalRC(self.grid, self.model)
+        return IsothermalEquilibrium(self.grid, self.model)
 
     @property
     def visualize(self):
         back_ground = self.initial_condition.back_ground(self.grid)
-        back_ground = self.model.conserved_variables(back_ground)
         return EquilibriumGraphs(self.grid, self.output_filename, self.model, back_ground)
 
     @property
