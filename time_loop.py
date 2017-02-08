@@ -17,6 +17,9 @@ class TimeLoop(object):
         u = u0
         dt = self.pick_time_step(u, time_keeper)
 
+        if self.plotting_steps.is_plotting_step(time_keeper):
+            self.visualize(u)
+
         while not time_keeper.is_finished():
             u = self.single_step(u, time_keeper.t, dt)
             time_keeper.advance_by(dt)
