@@ -98,12 +98,12 @@ class SineAdvection(AdvectionExperiment):
 
 
 def test_convergence_rate():
-    all_resolutions = [10, 20, 40, 80, 160]
+    all_resolutions = np.array([10, 20, 40, 80, 160, 320, 640])
 
     weno = OptimalWENO()
-    err = np.empty(len(all_resolutions))
+    err = np.empty(all_resolutions.size)
 
-    for k, resolution in enumerate(all_resolutions):
+    for k, resolution in enumerate(np.nditer(all_resolutions)):
         simulation = SineAdvection(resolution, 5)
         grid = simulation.grid
 
@@ -118,6 +118,10 @@ def test_convergence_rate():
 
         err[k] = l1_error(uT[:,3:-3], u_ref[:,3:-3])
 
-    print(err)
-    print(convergence_rate(err, np.array(all_resolutions)))
+    rate = convergence_rate(err, all_resolutions-6)
+    assert np.abs(np.max(np.abs(rate)) - 5.0) < 0.1
+
+    # print("")
+    # print(err)
+    # print(convergence_rate(err, np.array(all_resolutions)-6))
 

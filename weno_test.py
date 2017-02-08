@@ -69,7 +69,7 @@ def test_weno_discontinuous():
         for resolution in resolutions:
             plt.clf()
 
-            grid = Grid([0.0, 1.0], int(resolution), 3)
+            grid = Grid([0.0, 1.0], resolution, 3)
 
             cell_average = GaussLegendre(5)
             u0 = 1.0/grid.dx*cell_average(grid.edges, f).reshape((1, -1))
@@ -92,8 +92,8 @@ def test_weno_well_balanced():
     for resolution in resolutions:
         plt.clf()
 
-        grid = Grid([0.0, 1.0], int(resolution), 3)
         equilibrium = IsothermalRC(grid, model)
+        grid = Grid([0.0, 1.0], resolution, 3)
         weno = OptimalWENO(EquilibriumStencil(grid, equilibrium, model))
 
         ic = GaussianBumpIC(model)

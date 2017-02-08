@@ -26,7 +26,7 @@ def quadrature_error(n_cells, n_points):
 
 def quadrature_rate(n_points):
     resolutions = np.array([10, 20, 50, 100, 200, 500])
-    errors = np.array([quadrature_error(int(n_cells), n_points) for n_cells in list(resolutions)])
+    errors = np.array([quadrature_error(res, n_points) for res in np.nditer(resolutions)])
     rate = np.max(np.abs(np.log(errors[1:]/errors[:-1])/np.log(resolutions[1:]/resolutions[:-1])))
 
     return rate
