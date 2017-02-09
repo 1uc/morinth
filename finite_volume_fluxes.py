@@ -52,18 +52,14 @@ class FVMRateOfChange:
         return -1.0/self.grid.dx * (flux[:,1:,...] - flux[:,:-1,...])
 
     def x_source(self, u, u_plus, u_minus):
-        n_ghost = self.grid.n_ghost
-        source = self.source.edge_source(u, u_plus, u_minus, axis=0)
-        return source[:,n_ghost:-n_ghost,...]
+        return self.source.edge_source(u, u_minus[:,:-1,...], u_plus[:,1:,...], axis=0)
 
     def y_flux(self, u, u_plus, u_minus):
         flux = self.flux(u_plus, u_minus, axis=1)
         return -1.0/self.grid.dy * (flux[:,:,1:] - flux[:,:,:-1])
 
     def y_source(self, u, u_plus, u_minus):
-        n_ghost = self.grid.n_ghost
-        source = self.source.edge_source(u, u_plus, u_minus, axis=1)
-        return source[:,...,n_ghost:-n_ghost]
+        return self.source.edge_source(u, u_plus, u_minus, axis=1)
 
     def pick_time_step(self, u):
         return self.grid.dx/np.max(self.model.max_eigenvalue(u));
