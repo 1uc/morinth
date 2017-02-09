@@ -89,3 +89,10 @@ class PlotNever(object):
 
     def pick_time_step(self, time_keeper, dt):
         return dt
+
+class PlotLast:
+    def is_plotting_step(self, time_keeper):
+        return time_keeper.is_finished()
+
+    def pick_time_step(self, time_keeper, dt):
+        return dt
