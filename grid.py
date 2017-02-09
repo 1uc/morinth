@@ -44,7 +44,7 @@ class Grid(object):
     def partition(self, x0, x1, n_cells):
         n_ghost = self.n_ghost
         x = np.empty(n_cells+1)
-        x[n_ghost:-n_ghost] = np.linspace(x0, x1, n_cells - 2*n_ghost + 1)
+        x[n_ghost:n_cells+1-n_ghost] = np.linspace(x0, x1, n_cells - 2*n_ghost + 1)
 
         dx0 = x[n_ghost+1] - x[n_ghost]
         dx1 = x[-n_ghost-1] - x[-n_ghost-2]
