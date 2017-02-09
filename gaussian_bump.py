@@ -25,18 +25,21 @@ class GaussianBumpIC(object):
         self.x_mid = 0.5
         self.rho_ref = 1.0
         self.p_ref = 1.0
+        self.p_mid = 0.3
         E_int_ref = model.internal_energy(p=self.p_ref)
         self.u_ref = np.array([self.rho_ref, 0.0, 0.0, E_int_ref])
+        self.quadrature = GaussLegendre(5)
 
     def __call__(self, grid):
-        x = grid.cell_centers[:,0]
-
+        dp_point_values = lambda x : self.model.internal_energy(self.delta(x))
+        dp = self.quadrature(grid.edges, dp_point_values)
         u0 = self.back_ground(grid)
-        alpha = 1.0 + self.amplitude*gaussian(x - self.x_mid, self.sigma)
-        # u0[0,...] = u0[0,...]/alpha
-        u0[3,...] = u0[3,...]*alpha
 
+        u0[3,...] = u0[3,...] + dp
         return u0
+
+    def delta(self, x):
+        return self.p_mid*self.amplitude*gaussian(x - self.x_mid, self.sigma)
 
     def back_ground(self, grid):
         x = grid.cell_centers[:,0]
@@ -44,6 +47,19 @@ class GaussianBumpIC(object):
         u_bar_ref = equilibrium.cell_averages(self.u_ref)
 
         return equilibrium.reconstruct(u_bar_ref, self.x_ref, x)
+
+    def point_values(self, x):
+        """Point values of the initial condition."""
+        w = np.zeros((4,) + x.shape)
+
+        dp = self.delta(x)
+        T = self.model.temperature(rho=self.rho_ref, p=self.p_ref)
+        H = self.model.scale_height(T)
+
+        w[0,...] = self.rho_ref*np.exp(-(x - self.x_ref)/H)
+        w[3,...] = self.model.pressure(rho=w[0,...], T=T) + dp
+
+        return w
 
 
 class GaussianBump(EulerExperiment):
