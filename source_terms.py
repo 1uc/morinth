@@ -23,7 +23,7 @@ class CenteredSourceTerm(SourceTerm):
 
 
 class BalancedSourceTerm(SourceTerm):
-    def __init__(self, grid, model, equilibrium, order=4):
+    def __init__(self, grid, model, equilibrium, order):
         super().__init__()
 
         self.grid = grid
