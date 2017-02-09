@@ -7,7 +7,29 @@ class ENOBase(object):
         self._transform = transform
 
     def __call__(self, u, axis):
-        """Return reconstructed values U-, U+."""
+        """Compute the reconstructed values U+, U-.
+
+        The reconstructed values
+            >>> u_plus, u_minus = eno(u, axis=0)
+
+        are high-order interpolations at `edges[3:-3,...,0]` from the
+        left/right respectively.
+
+        Parameters
+        ----------
+               u : array_like
+                   cell-averages of the conserved variables over the entire
+                   domain
+
+            axis : int
+                   axis along which to perform the reconstruction
+
+        Returns
+        -------
+        array_like, array_like
+            (W)ENO interpolation at the cell boundary from from the cell
+            left/right of the interface.
+        """
 
         # Shuffle x-axis to the last position.
         if axis == 1 and u.ndim == 3:
