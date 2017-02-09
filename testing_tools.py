@@ -2,5 +2,8 @@ import numpy as np
 
 import pytest
 
-mark_manual = pytest.mark.skipif(not pytest.config.getoption("--run-manual"),
+def is_manual_mode():
+    return pytest.config.getoption("--manual-mode")
+
+mark_manual = pytest.mark.skipif(not is_manual_mode(),
                                  reason="pass `--run-manual` to run this")
