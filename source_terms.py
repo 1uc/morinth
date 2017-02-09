@@ -55,7 +55,9 @@ class BalancedSourceTerm(SourceTerm):
         if self.order == 2:
             return self.edge_source_o2(u_bar)
         elif self.order == 4:
-            return self.edge_source_o4(u_bar, u_left, u_right, axis)
+            return self.edge_source_o4(u_bar, u_left, u_right)
+        else:
+            raise Exception("Invalid order [{:d}].".format(self.order))
 
 
     def edge_source_o4(self, u_bar, u_left, u_right):
