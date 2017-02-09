@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
-import pickle
 import numpy as np
 import matplotlib.pyplot as plt
+import pickle
 
 from equilibrium import IsothermalEquilibrium
 from euler_experiment import EulerExperiment
@@ -12,7 +12,9 @@ from visualize import EquilibriumGraphs, DensityGraph
 from weno import OptimalWENO, EquilibriumStencil
 from source_terms import BalancedSourceTerm
 from math_tools import gaussian, l1_error, convergence_rate
-from time_keeper import FixedSteps, PlotNever
+from time_keeper import FixedSteps, PlotNever, PlotLast
+from quadrature import GaussLegendre
+from coding_tools import with_default
 
 class GaussianBumpIC(object):
     def __init__(self, model):
@@ -79,7 +81,11 @@ class GaussianBump(EulerExperiment):
 
     @property
     def source(self):
-        return BalancedSourceTerm(self.grid, self.model, self.equilibrium)
+        return BalancedSourceTerm(self.grid, self.model, self.equilibrium, self.source_order)
+
+    @property
+    def source_order(self):
+        return 2
 
     @property
     def equilibrium(self):
@@ -101,15 +107,23 @@ class GaussianBump(EulerExperiment):
 class GaussianBumpConvergence(GaussianBump):
     @property
     def plotting_steps(self):
-        return PlotNever()
+        return PlotLast()
 
     @property
     def output_filename(self):
         return "img/gaussian_bump_{:05d}".format(int(self.n_cells))
 
+class GaussianBumpReference(GaussianBumpConvergence):
+    @property
+    def n_cells(self):
+        return 2**12 + 6
+
+    @property
+    def source_order(self):
+        return 2
+
 def compute_reference_solution():
-    gaussian_bump = GaussianBumpConvergence()
-    gaussian_bump.n_cells = 2**14 + 6
+    gaussian_bump = GaussianBumpReference()
     grid = gaussian_bump.grid
 
     u0 = gaussian_bump.initial_condition.back_ground(grid)
@@ -151,7 +165,7 @@ def down_sample(u_fine, grid_fine, grid_coarse):
     return u_coarse
 
 if __name__ == '__main__':
-    # u0_ref, u_ref, grid = compute_reference_solution()
+    # u0_ref, u_ref, grid_ref = compute_reference_solution()
     u0_ref, u_ref, grid_ref = load_reference_solution()
     du_ref = u_ref - u0_ref
 
