@@ -8,38 +8,59 @@ import pickle
 from equilibrium import IsothermalEquilibrium
 from euler_experiment import EulerExperiment
 from boundary_conditions import Outflow, IsothermalOutflow
-from visualize import EquilibriumGraphs, DensityGraph
+from visualize import EquilibriumGraphs, DensityGraph, ConvergencePlot
 from weno import OptimalWENO, EquilibriumStencil
 from source_terms import BalancedSourceTerm
 from math_tools import gaussian, l1_error, convergence_rate
 from time_keeper import FixedSteps, PlotNever, PlotLast
 from quadrature import GaussLegendre
 from coding_tools import with_default
+from latex_tables import LatexConvergenceTable
+
 
 class GaussianBumpIC(object):
     def __init__(self, model):
         self.model = model
-        self.amplitude = 1.0e-5
+        self.p_amplitude = 1.0e-5
+        self.rho_amplitude = 1.0e-5
         self.sigma = 0.05
+
         self.x_ref = 0.0
-        self.x_mid = 0.5
-        self.rho_ref = 1.0
+        self.rho_ref = 2.0
         self.p_ref = 1.0
-        self.p_mid = 0.3
+        self.T_ref = self.model.temperature(p=self.p_ref, rho=self.rho_ref)
         E_int_ref = model.internal_energy(p=self.p_ref)
         self.u_ref = np.array([self.rho_ref, 0.0, 0.0, E_int_ref])
+
+        self.x_mid = 0.5
+        self.p_mid = 0.3
+
         self.quadrature = GaussLegendre(5)
 
     def __call__(self, grid):
-        dp_point_values = lambda x : self.model.internal_energy(self.delta(x))
-        dp = self.quadrature(grid.edges, dp_point_values)
+        du_lambda = lambda x : self.delta(x, as_conserved_variables=True)
         u0 = self.back_ground(grid)
+        du0 = self.quadrature(grid.edges, du_lambda)
 
-        u0[3,...] = u0[3,...] + dp
-        return u0
+        assert np.all(np.isfinite(u0))
+        assert np.all(np.isfinite(du0))
 
-    def delta(self, x):
-        return self.p_mid*self.amplitude*gaussian(x - self.x_mid, self.sigma)
+        return u0 + du0
+
+    def delta(self, x, as_conserved_variables=False):
+        """Perturbation in respective variables."""
+
+        dp = self.p_mid*gaussian(x - self.x_mid, self.sigma)
+        drho = self.model.rho(p=dp, T=self.T_ref)
+
+        dw = np.zeros((4,) + dp.shape)
+        dw[0,...] = self.rho_amplitude * drho
+        dw[3,...] = self.p_amplitude * dp
+
+        if as_conserved_variables:
+            dw[3,...] = self.model.internal_energy(p=dw[3,...])
+
+        return dw
 
     def back_ground(self, grid):
         x = grid.cell_centers[:,0]
@@ -49,17 +70,18 @@ class GaussianBumpIC(object):
         return equilibrium.reconstruct(u_bar_ref, self.x_ref, x)
 
     def point_values(self, x):
-        """Point values of the initial condition."""
-        w = np.zeros((4,) + x.shape)
+        """Point values of the primitive variables."""
 
-        dp = self.delta(x)
         T = self.model.temperature(rho=self.rho_ref, p=self.p_ref)
         H = self.model.scale_height(T)
 
+        w = np.zeros((4,) + x.shape)
         w[0,...] = self.rho_ref*np.exp(-(x - self.x_ref)/H)
-        w[3,...] = self.model.pressure(rho=w[0,...], T=T) + dp
+        w[3,...] = self.model.pressure(rho=w[0,...], T=T)
 
-        return w
+        dw = self.delta(x)
+
+        return w + dw
 
 
 class GaussianBump(EulerExperiment):
@@ -101,7 +123,11 @@ class GaussianBump(EulerExperiment):
 
     @property
     def source_order(self):
-        return 2
+        return self._source_order
+
+    @source_order.setter
+    def source_order(self, rhs):
+        self._source_order = rhs
 
     @property
     def equilibrium(self):
@@ -118,7 +144,7 @@ class GaussianBump(EulerExperiment):
 
     @property
     def steps_per_frame(self):
-        return 1
+        return 5
 
 class GaussianBumpConvergence(GaussianBump):
     @property
@@ -132,7 +158,7 @@ class GaussianBumpConvergence(GaussianBump):
 class GaussianBumpReference(GaussianBumpConvergence):
     @property
     def n_cells(self):
-        return 2**12 + 6
+        return 2**13 + 6
 
     @property
     def source_order(self):
@@ -180,16 +206,17 @@ def down_sample(u_fine, grid_fine, grid_coarse):
 
     return u_coarse
 
-if __name__ == '__main__':
+def compute_convergence(source_order):
     # u0_ref, u_ref, grid_ref = compute_reference_solution()
     u0_ref, u_ref, grid_ref = load_reference_solution()
     du_ref = u_ref - u0_ref
 
-    all_resolutions = 2**np.arange(4, 10) + 6
+    resolutions = 2**np.arange(3, 12) + 6
 
-    err = np.empty((4, all_resolutions.size))
-    for l, res in enumerate(np.nditer(all_resolutions)):
+    err = np.empty((4, resolutions.size))
+    for l, res in enumerate(resolutions):
         gaussian_bump = GaussianBumpConvergence()
+        gaussian_bump.source_order = source_order
         gaussian_bump.n_cells = res
         grid = gaussian_bump.grid
         n_ghost = grid.n_ghost
@@ -203,8 +230,25 @@ if __name__ == '__main__':
         du_ref_c = down_sample(du_ref, grid_ref, grid)
         err[:,l] = l1_error(du[:,n_ghost:-n_ghost], du_ref_c)
 
-    rho_rate = convergence_rate(err[0,...], all_resolutions-6)
-    E_int_rate = convergence_rate(err[3,...], all_resolutions-6)
+    rho_rate = convergence_rate(err[0,...], resolutions-6)
+    E_int_rate = convergence_rate(err[3,...], resolutions-6)
 
-    print(rho_rate)
-    print(E_int_rate)
+    return [err[0,...], err[3,...]], [rho_rate, E_int_rate], resolutions
+
+
+if __name__ == '__main__':
+    all_errors, all_rates = [], []
+    all_labels = ["$\\rho_{(1)}$", "$E_{(1)}$", "$\\rho_{(2)}$", "$E_{(2)}$"]
+
+    for order in [2, 4]:
+        error, rate, resolutions = compute_convergence(order)
+        all_errors += error
+        all_rates += rate
+
+    filename_base = "img/code-validation/gaussian_bump"
+    latex_table = LatexConvergenceTable(all_errors, all_rates, resolutions-6, all_labels)
+    latex_table.write(filename_base + ".tex")
+
+    plot = ConvergencePlot([2, 4])
+    plot(all_errors, resolutions-6, all_labels)
+    plot.save(filename_base)

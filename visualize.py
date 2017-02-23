@@ -1,5 +1,7 @@
+import itertools
 import numpy as np
 import matplotlib.pyplot as plt
+from coding_tools import with_default
 
 class PlottingBase(object):
     def __init__(self, grid, base_name):
@@ -153,3 +155,60 @@ class EquilibriumGraphs(MultiplePlots):
         pressure_plot = PressureGraph(grid, base_name + "-p", model, model.pressure(u0))
 
         self.all_plots = [density_plot, pressure_plot, vx_plot]
+
+class Markers:
+    def __init__(self, markers=None):
+        self.markers = with_default(markers, ['^', 'v', '<', '>', '+', 'x'])
+        self.sequence = itertools.cycle(self.markers)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.sequence)
+
+
+class ConvergencePlot:
+    def __init__(self, trend_orders=None):
+        self.trend_orders = with_default(trend_orders, [])
+
+    def __call__(self, all_errors, resolution, all_labels):
+        plt.clf()
+        marker = Markers()
+
+        for error, label in zip(all_errors, all_labels):
+            plt.plot(resolution, error, marker=next(marker), label=label)
+
+        self.trend_line(all_errors[0], resolution)
+
+        plt.yscale('log')
+        plt.xscale('log')
+
+        self.xlabel()
+        self.ylabel()
+
+        plt.legend(loc='best')
+
+    def trend_line(self, some_error, resolution_):
+        resolution = resolution_.astype(float)
+        n, N = resolution[0], resolution[-1]
+        r = self.trend_orders[-1]
+        x0 = some_error[-1]*N**r
+
+        for k, rate in enumerate(self.trend_orders):
+            offset = 1 + 1.0*(len(self.trend_orders) - k)
+            errors = offset * x0 * n**(rate - r) * resolution**-rate
+            plt.plot(resolution, errors, 'k-', label="$O(N^{{-{:d}}})$".format(rate))
+
+    def save(self, filename_base):
+        plt.savefig(filename_base + ".eps")
+        plt.savefig(filename_base + ".png")
+
+    def show(self):
+        plt.show()
+
+    def xlabel(self):
+        plt.xlabel("Resolution")
+
+    def ylabel(self):
+        plt.ylabel("Error")

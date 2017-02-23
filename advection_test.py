@@ -54,7 +54,7 @@ class SineAdvection(AdvectionExperiment):
 
     @property
     def final_time(self):
-        return 0.05
+        return 0.1
 
     @property
     def progress_bar(self):

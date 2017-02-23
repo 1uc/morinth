@@ -29,25 +29,16 @@ def test_mock_ode():
     plotting_steps = PlotNever()
     mask = np.array([True])
 
-#     solvers = [ ForwardEuler(bc, mock_roc),
-#                 BackwardEuler(bc, mock_roc, mask, 3.0),
-#                 BDF2(bc, mock_roc, mask, fixed_dt = 0.05),
-#                 SSP2(bc, mock_roc),
-#                 SSP3(bc, mock_roc),
-#                 Fehlberg(bc, mock_roc),
-#                 DIRKa23(bc, mock_roc, mask, 3.0),
-#                 DIRKa34(bc, mock_roc, mask, 3.0)]
     solvers = [ ForwardEuler,
                 with_mask(BackwardEuler, mask, 3.0),
-                # lambda bc, mock_roc: BDF2(bc, mock_roc, mask, fixed_dt = 0.05),
                 SSP2,
                 SSP3,
-                Fehlberg,
-                # with_mask(DIRKa23, mask, 3.0),
-                # with_mask(DIRKa34, mask, 3.0)
+                Fehlberg
                 ]
 
-    rates = [ 1.0, 1.0, 2.0, 2.0, 3.0, 5.0, 3.0, 4.0 ]
+    rates = [ 1.0, 1.0, 2.0, 3.0, 5.0 ]
+
+    assert len(solvers) == len(rates)
 
     T = 1.0
     all_resolutions = [10, 20, 40]

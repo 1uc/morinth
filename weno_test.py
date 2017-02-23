@@ -8,7 +8,7 @@ from euler import Euler
 import matplotlib.pylab as plt
 
 import pytest
-from testing_tools import mark_manual
+from testing_tools import is_manual_mode
 from math_tools import convergence_rate, l1_error, linf_error
 
 def sinusoidal(x):
@@ -65,24 +65,36 @@ def decreasing_criterium(u_plus, u_minus):
 
 def test_weno_discontinuous():
     weno = OptimalWENO()
-    resolutions = np.array([10, 20, 40]).reshape((-1,1))
+    all_resolutions = np.array([10, 20, 40])
     functions = [montone_increasing, montone_decreasing]
     criteria = [increasing_criterium, decreasing_criterium]
+    descriptions = ["increasing", "decreasing"]
+    assert len(functions) == len(criteria) == len(descriptions)
 
-    for f, c in zip(functions, criteria):
-        for resolution in resolutions:
-            plt.clf()
-
+    for f, c, d in zip(functions, criteria, descriptions):
+        for resolution in all_resolutions:
             grid = Grid([0.0, 1.0], resolution, 3)
 
             cell_average = GaussLegendre(5)
             u0 = 1.0/grid.dx*cell_average(grid.edges, f).reshape((1, -1))
 
             u_plus, u_minus = weno(u0, axis=0)
-            # plt.plot(grid.edges[3:-3,0], u_plus[0,:], '>')
-            # plt.hold(True)
-            # plt.plot(grid.cell_centers[3:-3,0], u0[0,3:-3], 'k_')
-            # plt.plot(grid.edges[3:-3,0], u_minus[0,:], '<')
-            # plt.show()
+
+            plt.clf()
+            plt.plot(grid.edges[3:-3,0], u_plus[0,:], '>', label='from left')
+            plt.plot(grid.cell_centers[3:-3,0], u0[0,3:-3], 'k_', label='average')
+            plt.plot(grid.edges[3:-3,0], u_minus[0,:], '<', label='from right')
+            plt.legend(loc="best")
+
+            filename_pattern= "img/code-validation/weno_jump_{:s}-N{:d}"
+            filename = filename_pattern.format(d, resolution)
+
+            plt.savefig(filename + ".png")
+            plt.savefig(filename + ".eps")
+
+            if is_manual_mode():
+                plt.show()
+
+            plt.clf()
 
             c(u_plus, u_minus)

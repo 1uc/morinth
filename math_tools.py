@@ -4,7 +4,7 @@ def gaussian(x, sigma):
     return np.exp(-(x/sigma)**2)
 
 def convergence_rate(error, resolution):
-    return np.log(error[...,:-1]/error[...,1:])/np.log(resolution[:-1]/resolution[1:])
+    return -np.log(error[...,:-1]/error[...,1:])/np.log(resolution[:-1]/resolution[1:])
 
 def l1_error(approximate, reference):
     """L1-error on a uniform grid.
