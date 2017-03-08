@@ -100,7 +100,6 @@ class ENO(ENOBase):
 
         return self.post_transform(u_transformed, u_rc, is_reversed)
 
-
 class WENOBase(ENOBase):
     def trace_values(self, u, is_reversed):
         u_transformed = self.pre_transform(u, is_reversed)

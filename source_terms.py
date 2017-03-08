@@ -59,7 +59,6 @@ class BalancedSourceTerm(SourceTerm):
         else:
             raise Exception("Invalid order [{:d}].".format(self.order))
 
-
     def edge_source_o2(self, u_bar):
         n_ghost = self.grid.n_ghost
 

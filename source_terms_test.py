@@ -42,7 +42,6 @@ def check_source_term_order(order):
         err[:, l] = linf_error(s_approx, s_ref)
 
     rate = convergence_rate(err[1, ...], all_resolutions-6)
-
     return err[1,...], rate, all_resolutions
 
 
