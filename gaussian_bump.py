@@ -249,6 +249,6 @@ if __name__ == '__main__':
     latex_table = LatexConvergenceTable(all_errors, all_rates, resolutions-6, all_labels)
     latex_table.write(filename_base + ".tex")
 
-    plot = ConvergencePlot([2, 4])
+    plot = ConvergencePlot([4, 5])
     plot(all_errors, resolutions-6, all_labels)
     plot.save(filename_base)

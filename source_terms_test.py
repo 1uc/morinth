@@ -1,20 +1,22 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
-from source_terms import BalancedSourceTerm
+from source_terms import BalancedSourceTerm, EquilibriumDensityInterpolation
 from grid import Grid
 from euler import Euler
 from equilibrium import IsothermalEquilibrium
 from weno import OptimalWENO, EquilibriumStencil
 from gaussian_bump import GaussianBumpIC
 from quadrature import GaussLegendre
-from math_tools import linf_error, convergence_rate
+from math_tools import l1_error, linf_error, convergence_rate
 from latex_tables import LatexConvergenceTable
 from visualize import ConvergencePlot
+import testing_tools
 
 def check_source_term_order(order):
     model = Euler(gamma=1.4, gravity = 1.2, specific_gas_constant=2.0)
     quadrature = GaussLegendre(5)
-    all_resolutions = 2**np.arange(3, 10)
+    all_resolutions = 2**np.arange(3, 10) + 6
 
     ic = GaussianBumpIC(model)
     ic.p_amplitude, ic.rho_amplitude = 0.0, 10.0
@@ -59,5 +61,60 @@ def test_source_term_order():
     table.write(filename_base + ".tex")
 
     plot = ConvergencePlot(trend_orders=[2, 4])
-    plot(all_errors, resolutions, all_labels)
+    plot(all_errors, resolutions-6, all_labels)
     plot.save(filename_base)
+
+    assert np.max(np.abs(all_rates[1])) > 1.5
+
+def test_equilibrium_interpolation():
+    n_ghost = 3
+    model = Euler(gamma = 1.4, gravity = 1.0, specific_gas_constant = 1.0)
+
+    ic = GaussianBumpIC(model)
+    ic.rho_amplitude, ic.p_amplitude = 1.0, 0.0
+    alpha = 0.25
+
+    resolutions = 2**np.arange(3, 10) + 6
+    err = np.empty(resolutions.size)
+
+    filename_base = "img/code-validation/equilibrium_interpolation-{:d}"
+
+    for l, n_cells in enumerate(resolutions):
+        grid = Grid([0.0, 1.0], n_cells, n_ghost)
+        equilibrium = IsothermalEquilibrium(grid, model)
+        stencil = EquilibriumStencil(grid, equilibrium, model)
+
+        x0 = grid.edges[n_ghost:-n_ghost-1,0]
+        x1 = grid.edges[n_ghost+1:-n_ghost,0]
+        x_ref = grid.cell_centers[n_ghost:-n_ghost,0]
+
+        u0 = ic(grid)
+        interpolate = EquilibriumDensityInterpolation(grid, model, equilibrium, u0)
+        x = x0 + alpha*(x1 - x0)
+
+        w_ref = ic.point_values(x)
+        rho_ref = w_ref[0,...]
+
+        _, p_ref, T_ref, _, _ = equilibrium.point_values(u0[:,3:-3])
+        rho_eq_approx, _ = equilibrium.extrapolate(p_ref, T_ref, x_ref, x)
+        drho_approx = interpolate(alpha)
+        rho_approx = rho_eq_approx + drho_approx
+
+        plt.clf()
+        plt.plot(x_ref, u0[0,3:-3], label="ref")
+        plt.plot(x, rho_eq_approx, label="loc. eq")
+        plt.plot(x, rho_approx, label="approx")
+        plt.plot(x, drho_approx, label="delta")
+        plt.legend()
+
+        filename = filename_base.format(l)
+        plt.savefig(filename + ".eps")
+        plt.savefig(filename + ".png")
+
+        if testing_tools.is_manual_mode():
+            plt.show()
+
+        err[l] = l1_error(rho_approx[np.newaxis,:], rho_ref[np.newaxis,:])
+
+    rate = convergence_rate(err, resolutions-6)
+    assert np.all(np.abs(rate[3:] - 5.0) < 0.2)

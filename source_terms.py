@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from weno import EquilibriumStencil
 
 class SourceTerm:
     def __init__(self):
@@ -66,10 +68,10 @@ class BalancedSourceTerm(SourceTerm):
         x_right = self.grid.edges[1:,...,0]
         x_left = self.grid.edges[:-1,...,0]
 
-        _, p_point, T_point, _, _ = self.equilibrium.point_values(u_bar)
+        _, p_eq_point, T, _, _ = self.equilibrium.point_values(u_bar)
 
-        _, p_left = self.equilibrium.extrapolate(p_point, T_point, x_ref, x_left)
-        _, p_right = self.equilibrium.extrapolate(p_point, T_point, x_ref, x_right)
+        _, p_left = self.equilibrium.extrapolate(p_eq_point, T, x_ref, x_left)
+        _, p_right = self.equilibrium.extrapolate(p_eq_point, T, x_ref, x_right)
 
         dudt = np.zeros_like(u_bar)
         dudt[1,...] = (p_right - p_left)/self.grid.dx
@@ -78,36 +80,40 @@ class BalancedSourceTerm(SourceTerm):
         return dudt[:,n_ghost:-n_ghost,...]
 
     def edge_source_o4(self, u_bar, u_left, u_right):
+        equilibrium = self.equilibrium
+
         n_ghost = self.grid.n_ghost
 
-        x_ref = self.grid.cell_centers[n_ghost:-n_ghost,...,0]
-        x_right = self.grid.edges[n_ghost+1:-n_ghost,...,0]
-        x_left = self.grid.edges[n_ghost:-n_ghost-1,...,0]
+        x_0 = self.x_left()
+        x_1 = self.x_rel(0.25)
+        x_2 = self.x_ref()
+        x_3 = self.x_rel(0.75)
+        x_4 = self.x_right()
+
+        interpolate = self.density_interpolation(u_bar)
 
         u_bar = u_bar[:,n_ghost:-n_ghost,...]
-        rho_left = u_left[0,...]
-        rho_right = u_right[0,...]
 
-        rho_point, p_point, T_point, _, _ = self.equilibrium.point_values(u_bar)
+        rho_eq_point, p_eq_point, T, _, _ = equilibrium.point_values(u_bar)
 
-        rho_eq_left, p_eq_left = self.equilibrium.extrapolate(p_point, T_point, x_ref, x_left)
-        rho_eq_right, p_eq_right = self.equilibrium.extrapolate(p_point, T_point, x_ref, x_right)
+        rho_eq_0, p_eq_0 = equilibrium.extrapolate(p_eq_point, T, x_2, x_0)
+        rho_eq_1, p_eq_1 = equilibrium.extrapolate(p_eq_point, T, x_2, x_1)
+        rho_eq_2, p_eq_2 = equilibrium.extrapolate(p_eq_point, T, x_2, x_2)
+        rho_eq_3, p_eq_3 = equilibrium.extrapolate(p_eq_point, T, x_2, x_3)
+        rho_eq_4, p_eq_4 = equilibrium.extrapolate(p_eq_point, T, x_2, x_4)
+
+        rho_0 = rho_eq_0 + u_left[0,...]
+        rho_1 = rho_eq_1 + interpolate(0.25)
+        rho_2 = rho_eq_2 + interpolate(0.5)
+        rho_3 = rho_eq_3 + interpolate(0.75)
+        rho_4 = rho_eq_4 + u_right[0,...]
 
         diff = lambda x, y: (y - x)/self.grid.dx
         avg = lambda x, y: 0.5*(x + y)
 
-        rho_lr = avg(rho_left, rho_right)
-        rho_lr_eq = avg(rho_eq_left, rho_eq_right)
-
-        rho_lm = avg(rho_left, rho_point)
-        rho_mr = avg(rho_point, rho_right)
-
-        rho_lm_eq = avg(rho_eq_left, rho_point)
-        rho_mr_eq = avg(rho_point, rho_eq_right)
-
-        S1 = rho_lr/rho_lr_eq*diff(p_eq_left, p_eq_right)
-        S2_a = rho_lm/rho_lm_eq*diff(p_eq_left, p_point)
-        S2_b = rho_mr/rho_mr_eq*diff(p_point, p_eq_right)
+        S1 = rho_2/rho_eq_2*diff(p_eq_0, p_eq_4)
+        S2_a = rho_1/rho_eq_1*diff(p_eq_0, p_eq_2)
+        S2_b = rho_3/rho_eq_3*diff(p_eq_2, p_eq_4)
 
         S = (4.0*(S2_a + S2_b) - S1)/3.0
 
@@ -116,3 +122,53 @@ class BalancedSourceTerm(SourceTerm):
         dudt[3,...] = -self.model.gravity*u_bar[1,...]
 
         return dudt
+
+    def density_interpolation(self, u_bar):
+        return EquilibriumDensityInterpolation(self.grid, self.model, self.equilibrium, u_bar)
+
+    def rho_eq(self, p_eq_point, T, x):
+        return self.equilibrium(p_eq_point, T, self.x_ref(), x)
+
+    def x_left(self):
+        n_ghost = self.grid.n_ghost
+        return self.grid.edges[n_ghost:-n_ghost-1,...,0]
+
+    def x_rel(self, alpha):
+        return self.x_left() + alpha*(self.x_right() - self.x_left())
+
+    def x_ref(self):
+        n_ghost = self.grid.n_ghost
+        return self.grid.cell_centers[n_ghost:-n_ghost,...,0]
+
+    def x_right(self):
+        n_ghost = self.grid.n_ghost
+        return self.grid.edges[n_ghost+1:-n_ghost,...,0]
+
+class EquilibriumDensityInterpolation:
+    def __init__(self, grid, model, equilibrium, u_bar):
+        self.grid = grid
+        self.model = model
+        self.equilibrium = equilibrium
+        self.equilibrium_stencil = EquilibriumStencil(grid, equilibrium, model)
+
+        n_ghost = grid.n_ghost
+        x = np.arange(-2, 4, dtype=float)
+        ua, ub, uc, ud, ue = self.equilibrium_stencil.stencil(u_bar, is_reversed=False)
+
+        rho = np.zeros((ua.shape[1]-2, 6))
+        for k, u in enumerate([ua, ub, uc, ud, ue]):
+            rho[:,k+1] = u[0,1:-1]
+
+        self.poly = np.empty((5, rho.shape[0]))
+        rho_int = np.cumsum(rho, axis=1)
+
+        for i in range(rho.shape[0]):
+            polyint = np.polyfit(x, rho_int[i,:], deg=5)
+            self.poly[:,i] = np.polyder(polyint)
+
+    def __call__(self, alpha):
+        rho = np.empty(self.poly.shape[1])
+        for i in range(rho.shape[0]):
+            rho[i] = np.polyval(self.poly[:,i], alpha)
+
+        return rho
