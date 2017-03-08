@@ -9,7 +9,7 @@ from hllc import HLLC
 from rusanov import Rusanov
 
 from weno import StableWENO, ENO, OptimalWENO
-from runge_kutta import ForwardEuler, SSP3
+from runge_kutta import ForwardEuler, SSP3, Fehlberg
 
 from grid import Grid
 from time_keeper import PlotEveryNthStep, FixedDuration
@@ -64,8 +64,10 @@ class NumericalExperiment(object):
         else:
             if self.order == 1:
                 self._single_step = ForwardEuler(self.boundary_condition, self.fvm)
-            elif self.order == 3 or self.order == 5:
+            elif self.order == 3:
                 self._single_step = SSP3(self.boundary_condition, self.fvm)
+            elif self.order == 5:
+                self._single_step = Fehlberg(self.boundary_condition, self.fvm)
             else:
                 raise Exception("Invalid order [{:s}].".format(self.order))
 
