@@ -5,7 +5,12 @@ class EulerModel(object):
 
     def __init__(self, gamma, gravity, specific_gas_constant):
         self.gamma = gamma
-        self.gravity = gravity
+
+        if isinstance(gravity, Gravity):
+            self.gravity = gravity
+        else:
+            self.gravity = LinearGravity(gravity)
+
         self.specific_gas_constant = specific_gas_constant
 
     def sound_speed(self, u, p):
@@ -46,11 +51,6 @@ class EulerModel(object):
     def rho(self, p, T):
         return p/(T*self.specific_gas_constant)
 
-    def scale_height(self, T):
-        """Isothermal scale height of the atmosphere."""
-        return T*self.specific_gas_constant/self.gravity
-
-
 class Euler(EulerModel):
     def flux(self, u, axis, p=None):
         """Physical flux of the Euler equations."""
@@ -66,14 +66,16 @@ class Euler(EulerModel):
 
         return flux
 
-    def source(self, u):
+    def source(self, u, x):
         """Physical source term of the Euler equations."""
         source = np.empty_like(u)
 
+        dphi_dx = self.gravity.dphi_dx(x)
+
         source[0,...] = 0.0
         source[1,...] = 0.0
-        source[2,...] = -u[0,...]*self.gravity
-        source[3,...] = -u[1,...]*self.gravity
+        source[2,...] = -u[0,...]*dphi_dx
+        source[3,...] = -u[1,...]*dphi_dx
 
         return source
 
@@ -178,3 +180,34 @@ class QuasiLinearEuler(EulerModel):
         eig_val[3,...] = v + a
 
         return eig_val
+
+class Gravity():
+    pass
+
+class LinearGravity(Gravity):
+    def __init__(self, g):
+        self.g = g
+
+    def phi(self, x):
+        return self.g*x
+
+    def dphi_dx(self, x):
+        return self.g
+
+    def dphi_dxx(self, x):
+        return 0.0
+
+class PointMassGravity(Gravity):
+    def __init__(self, mass, gravitational_constant, radius):
+        self.G = gravitational_constant
+        self.GM = self.G*mass
+        self.radius = radius
+
+    def phi(self, x):
+        return -self.GM/(x + self.radius)
+
+    def dphi_dx(self, x):
+        return self.GM/(x + self.radius)**2
+
+    def dphi_dxx(self, x):
+        return -2.0*self.GM/(x + self.radius)**3

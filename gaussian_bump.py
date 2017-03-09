@@ -65,7 +65,7 @@ class GaussianBumpIC(object):
     def back_ground(self, grid):
         x = grid.cell_centers[:,0]
         equilibrium = IsothermalEquilibrium(model=self.model, grid=grid)
-        u_bar_ref = equilibrium.cell_averages(self.u_ref)
+        u_bar_ref = equilibrium.cell_averages(self.u_ref, self.x_ref)
 
         return equilibrium.reconstruct(u_bar_ref, self.x_ref, x)
 
@@ -73,10 +73,10 @@ class GaussianBumpIC(object):
         """Point values of the primitive variables."""
 
         T = self.model.temperature(rho=self.rho_ref, p=self.p_ref)
-        H = self.model.scale_height(T)
+        gravity, R = self.model.gravity, self.model.specific_gas_constant
 
         w = np.zeros((4,) + x.shape)
-        w[0,...] = self.rho_ref*np.exp(-(x - self.x_ref)/H)
+        w[0,...] = self.rho_ref*np.exp(-(gravity.phi(x)- gravity.phi(self.x_ref))/(R*T))
         w[3,...] = self.model.pressure(rho=w[0,...], T=T)
 
         dw = self.delta(x)

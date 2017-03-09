@@ -34,12 +34,10 @@ def check_source_term_order(order):
         u_left, u_right = u_minus[:,:-1,...], u_plus[:,1:,...]
         s_approx = source_term.edge_source(u_bar, u_left, u_right, axis=0)
 
-        rho_bar = quadrature(grid.edges[3:-3,...], lambda x: ic.point_values(x)[0,...])
-        v_bar = 0.0
+        S_momentum = lambda x: -ic.point_values(x)[0,...]*model.gravity.dphi_dx(x)
 
         s_ref = np.zeros_like(s_approx)
-        s_ref[1,...] = -rho_bar * model.gravity
-        s_ref[3,...] = -v_bar * model.gravity
+        s_ref[1,...] = quadrature(grid.edges[3:-3,...], S_momentum)
 
         err[:, l] = linf_error(s_approx, s_ref)
 
@@ -64,7 +62,7 @@ def test_source_term_order():
     plot(all_errors, resolutions-6, all_labels)
     plot.save(filename_base)
 
-    assert np.max(np.abs(all_rates[1])) > 1.5
+    assert np.abs(np.max(all_rates[1]) - 4.0) < 0.1
 
 def test_equilibrium_interpolation():
     n_ghost = 3
@@ -95,7 +93,7 @@ def test_equilibrium_interpolation():
         w_ref = ic.point_values(x)
         rho_ref = w_ref[0,...]
 
-        _, p_ref, T_ref, _, _ = equilibrium.point_values(u0[:,3:-3])
+        _, p_ref, T_ref, _, _ = equilibrium.point_values(u0[:,3:-3], x_ref)
         rho_eq_approx, _ = equilibrium.extrapolate(p_ref, T_ref, x_ref, x)
         drho_approx = interpolate(alpha)
         rho_approx = rho_eq_approx + drho_approx

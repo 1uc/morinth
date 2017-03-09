@@ -198,7 +198,7 @@ class EquilibriumStencil(object):
 
         x_ref = cell_centers[2:-2,...,0]
         xij = edges[3:-2,...,0]
-        _, p_ref, T_ref, _, _ = self.equilibrium.point_values(u[:,2:-2,...])
+        _, p_ref, T_ref, _, _ = self.equilibrium.point_values(u[:,2:-2,...], x_ref)
 
         uij = np.zeros_like(duij)
         uij[0,...], p_ij = self.equilibrium.extrapolate(p_ref, T_ref, x_ref, xij)

@@ -132,6 +132,6 @@ def test_weno_in_equiblibrium():
     x = grid.cell_centers[...,0]
     rho_exact, p_exact = equilibrium.extrapolate(p_ref, T_ref, x_ref, x)
 
-    rho_point, p_point, _, _, _ = equilibrium.point_values(u0)
+    rho_point, p_point, _, _, _ = equilibrium.point_values(u0, x)
 
     assert np.all(np.abs(rho_point - rho_exact) < 1e-14)
