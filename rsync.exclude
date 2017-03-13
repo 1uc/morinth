@@ -1,0 +1,19 @@
+# don't copy these
+archive
+doc/*
+data/*
+img/*
+junk
+
+# archives
+*.tar
+*.tar.*
+*.tgz
+*.zip
+*.out
+
+# vim auto-saves
+.*.sw?
+
+# emacs lock-files
+.#*
