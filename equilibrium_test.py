@@ -28,11 +28,10 @@ def test_equilibrium_order():
     for l, res in enumerate(all_resolutions):
         grid = Grid([0.0, 1.0], res, 0)
 
-        approximate = ic(grid)
-
         ic_point_values = lambda x: model.conserved_variables(ic.point_values(x))
         reference = quadrature(grid.edges, ic_point_values)
-        err[:,l] = l1_error(approximate, reference)
+
+        err[:,l] = l1_error(ic(grid), reference)
 
     rate = convergence_rate(err[[0,3],...], all_resolutions)
     assert np.all(np.abs(rate - 4.0) < 0.1)
@@ -132,6 +131,6 @@ def test_weno_in_equiblibrium():
     x = grid.cell_centers[...,0]
     rho_exact, p_exact = equilibrium.extrapolate(p_ref, T_ref, x_ref, x)
 
-    rho_point, p_point, _, _, _ = equilibrium.point_values(u0, x)
+    rho_point, p_point, _ = equilibrium.point_values(u0, x)
 
     assert np.all(np.abs(rho_point - rho_exact) < 1e-14)

@@ -9,7 +9,7 @@ class EulerModel(object):
         if isinstance(gravity, Gravity):
             self.gravity = gravity
         else:
-            self.gravity = LinearGravity(gravity)
+            self.gravity = PointMassGravity(1.0, gravity, 1.0)
 
         self.specific_gas_constant = specific_gas_constant
 

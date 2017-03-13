@@ -24,7 +24,7 @@ class IsothermalEquilibrium:
         rho = u_point[0,...]
         p = model.pressure(u=u_point)
         T = model.temperature(rho=rho, p=p)
-        drho_dxx_per_rho = self.drho_dxx_per_rho(x, T)
+        drho_dxx_per_rho = self.drho_dxx_per_rho(T, x)
         dx2_24 = self.grid.dx**2 / 24.0
 
         rho_bar = rho*(1.0 + dx2_24*drho_dxx_per_rho)
@@ -62,13 +62,13 @@ class IsothermalEquilibrium:
 
         dx2_24 = self.grid.dx*self.grid.dx/24.0
 
-        drho_dxx_per_rho = self.drho_dxx_per_rho(x_mid, T_tilda)
+        drho_dxx_per_rho = self.drho_dxx_per_rho(T_tilda, x_mid)
         rho_point = u_bar[0,...]/(1 + dx2_24*drho_dxx_per_rho)
         p_point = model.pressure(rho=rho_point, T=T_tilda)
 
-        return rho_point, p_point, T_tilda, drho_dxx_per_rho, dx2_24
+        return rho_point, p_point, T_tilda
 
-    def drho_dxx_per_rho(self, x, T):
+    def drho_dxx_per_rho(self, T, x):
         R = self.model.specific_gas_constant
         gravity = self.model.gravity
         dphi_dx = gravity.dphi_dx(x)
@@ -78,6 +78,7 @@ class IsothermalEquilibrium:
         return drho_dxx_per_rho
 
     def extrapolate(self, p_ref, T_ref, x_ref, x):
+        """Extrapolate point-values in a reference point to point-values."""
         gravity, R = self.model.gravity, self.model.specific_gas_constant
 
         p = p_ref*np.exp(-(gravity.phi(x) - gravity.phi(x_ref))/(R*T_ref))
@@ -86,15 +87,18 @@ class IsothermalEquilibrium:
         return rho, p
 
     def reconstruct(self, u_bar, x_ref, x, is_reversed=False):
+        """Reconstruct the equilibrium cell-average in another cell."""
         model = self.model
 
-        rho_point, p_point, T_ref, iH2, dx2_24 = self.point_values(u_bar, x_ref)
+        rho_point, p_point, T_tilda = self.point_values(u_bar, x_ref)
+        dx2_24 = self.grid.dx**2 / 24.0
+        drho_dxx_per_rho = self.drho_dxx_per_rho(T_tilda, x)
 
-        rho_eq, p_eq = self.extrapolate(p_point, T_ref, x_ref, x)
+        rho_eq, p_eq = self.extrapolate(p_point, T_tilda, x_ref, x)
         E_int_eq = model.internal_energy(p=p_eq)
 
-        rho_eq_bar = rho_eq + dx2_24*rho_eq*iH2
-        p_eq_bar = model.pressure(rho=rho_eq_bar, T=T_ref)
+        rho_eq_bar = rho_eq*(1.0 + dx2_24*drho_dxx_per_rho)
+        p_eq_bar = model.pressure(rho=rho_eq_bar, T=T_tilda)
         E_int_eq_bar = model.internal_energy(p=p_eq_bar)
 
         u_wb = np.empty((4,) + x.shape)

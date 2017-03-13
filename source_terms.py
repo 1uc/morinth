@@ -68,7 +68,7 @@ class BalancedSourceTerm(SourceTerm):
         x_right = self.grid.edges[1:,...,0]
         x_left = self.grid.edges[:-1,...,0]
 
-        _, p_eq_point, T, _, _ = self.equilibrium.point_values(u_bar, x_ref)
+        _, p_eq_point, T = self.equilibrium.point_values(u_bar, x_ref)
 
         _, p_left = self.equilibrium.extrapolate(p_eq_point, T, x_ref, x_left)
         _, p_right = self.equilibrium.extrapolate(p_eq_point, T, x_ref, x_right)
@@ -94,7 +94,7 @@ class BalancedSourceTerm(SourceTerm):
 
         u_bar = u_bar[:,n_ghost:-n_ghost,...]
 
-        rho_eq_point, p_eq_point, T, _, _ = equilibrium.point_values(u_bar, x_2)
+        rho_eq_point, p_eq_point, T = equilibrium.point_values(u_bar, x_2)
 
         rho_eq_0, p_eq_0 = equilibrium.extrapolate(p_eq_point, T, x_2, x_0)
         rho_eq_1, p_eq_1 = equilibrium.extrapolate(p_eq_point, T, x_2, x_1)

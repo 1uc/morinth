@@ -93,7 +93,7 @@ def test_equilibrium_interpolation():
         w_ref = ic.point_values(x)
         rho_ref = w_ref[0,...]
 
-        _, p_ref, T_ref, _, _ = equilibrium.point_values(u0[:,3:-3], x_ref)
+        _, p_ref, T_ref = equilibrium.point_values(u0[:,3:-3], x_ref)
         rho_eq_approx, _ = equilibrium.extrapolate(p_ref, T_ref, x_ref, x)
         drho_approx = interpolate(alpha)
         rho_approx = rho_eq_approx + drho_approx

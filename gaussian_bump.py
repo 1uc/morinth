@@ -162,7 +162,7 @@ class GaussianBumpReference(GaussianBumpConvergence):
 
     @property
     def source_order(self):
-        return 2
+        return 4
 
 def compute_reference_solution():
     gaussian_bump = GaussianBumpReference()
@@ -207,8 +207,8 @@ def down_sample(u_fine, grid_fine, grid_coarse):
     return u_coarse
 
 def compute_convergence(source_order):
-    # u0_ref, u_ref, grid_ref = compute_reference_solution()
-    u0_ref, u_ref, grid_ref = load_reference_solution()
+    u0_ref, u_ref, grid_ref = compute_reference_solution()
+    # u0_ref, u_ref, grid_ref = load_reference_solution()
     du_ref = u_ref - u0_ref
 
     resolutions = 2**np.arange(3, 12) + 6
