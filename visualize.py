@@ -179,7 +179,7 @@ class ConvergencePlot:
         for error, label in zip(all_errors, all_labels):
             plt.plot(resolution, error, marker=next(marker), label=label)
 
-        self.trend_line(all_errors[0], resolution)
+        self.trend_line(all_errors, resolution)
 
         plt.yscale('log')
         plt.xscale('log')
@@ -189,14 +189,16 @@ class ConvergencePlot:
 
         plt.legend(loc='best')
 
-    def trend_line(self, some_error, resolution_):
+    def trend_line(self, all_errors, resolution_):
         resolution = resolution_.astype(float)
         n, N = resolution[0], resolution[-1]
         r = self.trend_orders[-1]
-        x0 = some_error[-1]*N**r
+
+        min_error = min([np.min(err) for err in all_errors])
+        x0 = min_error*N**r
 
         for k, rate in enumerate(self.trend_orders):
-            offset = 1 + 1.0*(len(self.trend_orders) - k)
+            offset = 2.0 + 1.0*(len(self.trend_orders) - k)
             errors = offset * x0 * n**(rate - r) * resolution**-rate
             plt.plot(resolution, errors, 'k-', label="$O(N^{{-{:d}}})$".format(rate))
 
