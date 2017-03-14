@@ -153,7 +153,7 @@ class EquilibriumDensityInterpolation:
 
         n_ghost = grid.n_ghost
         x = np.arange(-2, 4, dtype=float)
-        ua, ub, uc, ud, ue = self.equilibrium_stencil.stencil(u_bar, is_reversed=False)
+        ua, ub, uc, ud, ue = self.equilibrium_stencil.stencil(u_bar)
 
         rho = np.zeros((ua.shape[1]-2, 6))
         for k, u in enumerate([ua, ub, uc, ud, ue]):

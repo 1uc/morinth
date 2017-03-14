@@ -1,6 +1,6 @@
 import numpy as np
 
-from weno import OptimalWENO
+from weno import OptimalWENO, LagrangePolynomials
 from grid import Grid
 from quadrature import GaussLegendre
 from euler import Euler
@@ -103,3 +103,39 @@ def test_weno_discontinuous():
             plt.clf()
 
             c(u_plus, u_minus)
+
+def test_lagrange_prime():
+    L = LagrangePolynomials()
+
+    x = 0.23456
+    xi = np.arange(6) + 0.5
+
+    L1 = L.prime(x, xi[:4], 1)
+    assert L1 == 0.5*(  (x - xi[2])*(x - xi[3])
+                      + (x - xi[0])*(x - xi[3])
+                      + (x - xi[0])*(x - xi[2]))
+
+def test_p123():
+    p_ref = np.empty((3, 3))
+    p_ref[0,:] = np.array([1/3, -7/6, 11/6])
+    p_ref[1,:] = np.array([-1/6, 5/6, 1/3])
+    p_ref[2,:] = np.array([1/3, 5/6, -1/6])
+
+    weno = OptimalWENO()
+    p, _ = weno.compute_pq(x_rel=0.5)
+
+    for i in range(3):
+        assert np.all(np.abs(p[i,:] - p_ref[i,:]) < 1e-10), "i = {:d}".format(i)
+
+def test_linear_weights():
+    C_ref_05 = np.array([1.0/10.0, 3.0/5.0, 3.0/10.0])
+    C_ref_00 = np.array([-0.1125, 1.225, -0.1125])
+
+    weno = OptimalWENO()
+
+    for C_ref, x in zip([C_ref_05, C_ref_00], [0.5, 0.0]):
+        C = np.array(weno.linear_weights(x))
+        assert np.all(np.abs(C - C_ref) < 1e-12)
+
+    assert 0.5 in weno._linear_weights
+    assert 0.0 in weno._linear_weights

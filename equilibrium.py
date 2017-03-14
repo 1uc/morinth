@@ -86,7 +86,7 @@ class IsothermalEquilibrium:
 
         return rho, p
 
-    def reconstruct(self, u_bar, x_ref, x, is_reversed=False):
+    def reconstruct(self, u_bar, x_ref, x):
         """Reconstruct the equilibrium cell-average in another cell."""
         model = self.model
 
@@ -109,7 +109,7 @@ class IsothermalEquilibrium:
 
         return u_wb
 
-    def delta(self, u_ref, x_ref, u, x, is_reversed):
+    def delta(self, u_ref, x_ref, u, x):
         """Compute the difference from equilibrium."""
-        du = u - self.reconstruct(u_ref, x_ref, x, is_reversed)
+        du = u - self.reconstruct(u_ref, x_ref, x)
         return du
