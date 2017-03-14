@@ -47,11 +47,16 @@ def test_weno_smooth():
     for l, res in enumerate(np.nditer(resolutions)):
         err_plus[:,l], err_minus[:,l] = weno_error(res)
 
-    rate_minus = convergence_rate(err_plus, resolutions-6)
-    rate_plus = convergence_rate(err_minus, resolutions-6)
-    rate = np.maximum(np.max(np.abs(rate_plus), axis=0),
-                      np.max(np.abs(rate_minus), axis=0))
-    assert np.abs(np.max(np.abs(rate)) - 5.0) < 0.1, "Observed rate: " + str(rate)
+    assert_msg = lambda rate: "Observed rate: {:s}".format(str(rate))
+
+    rate_minus = convergence_rate(err_minus, resolutions-6)
+    print(err_minus)
+    assert np.abs(np.max(rate_minus) - 5.0) < 0.1, assert_msg(rate_minus)
+
+    rate_plus = convergence_rate(err_plus, resolutions-6)
+    print(err_plus)
+    assert np.abs(np.max(rate_plus) - 5.0) < 0.1, assert_msg(rate_plus)
+
 
 def increasing_criterium(u_plus, u_minus):
     assert np.all(u_plus <= u_minus + 1e-9)
