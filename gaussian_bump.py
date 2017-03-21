@@ -99,7 +99,10 @@ class GaussianBump(EulerExperiment):
 
     @property
     def initial_condition(self):
-        return GaussianBumpIC(self.model)
+        ic = GaussianBumpIC(self.model)
+        ic.p_amplitude, ic.rho_amplitude = 1e-5, 1e-5
+
+        return ic
 
     @property
     def order(self):
@@ -115,23 +118,51 @@ class GaussianBump(EulerExperiment):
 
     @property
     def weno(self):
-        return OptimalWENO(EquilibriumStencil(self.grid, self.equilibrium, self.model))
+        mode = self.well_balancing
+
+        if mode == "wb_o2" or mode == "wb_o4":
+            return OptimalWENO(EquilibriumStencil(self.grid, self.equilibrium, self.model))
+
+        elif mode == "naive":
+            return OptimalWENO()
+
+        else:
+            raise Exception("Wrong `well_balancing`.")
 
     @property
     def source(self):
-        return BalancedSourceTerm(self.grid, self.model, self.equilibrium, self.source_order)
+        mode = self.well_balancing
+
+        if mode == "wb_o2" or mode == "wb_o4":
+            source_order = 4.0 if mode == "wb_o4" else 2.0
+            return BalancedSourceTerm(self.grid, self.model,
+                                      self.equilibrium, source_order)
+
+        elif mode == "naive":
+            return super().source
+
+        else:
+            raise Exception("Wrong `well_balancing`.")
 
     @property
-    def source_order(self):
-        return self._source_order
+    def well_balancing(self):
+        return self._well_balancing
 
-    @source_order.setter
-    def source_order(self, rhs):
-        self._source_order = rhs
+    @well_balancing.setter
+    def well_balancing(self, rhs):
+        self._well_balancing = rhs
 
     @property
     def equilibrium(self):
-        return IsothermalEquilibrium(self.grid, self.model)
+        mode = self.well_balancing
+        if mode == "wb_o2" or mode == "wb_o4":
+            return IsothermalEquilibrium(self.grid, self.model)
+
+        elif mode == "naive":
+            return None
+
+        else:
+            assert Exception("Wrong `well_balancing`.")
 
     @property
     def visualize(self):
@@ -157,12 +188,13 @@ class GaussianBumpConvergence(GaussianBump):
 
 class GaussianBumpReference(GaussianBumpConvergence):
     @property
+    def well_balancing(self):
+        return "wb_o4"
+
+    @property
     def n_cells(self):
         return 2**13 + 6
 
-    @property
-    def source_order(self):
-        return 4
 
 def compute_reference_solution():
     gaussian_bump = GaussianBumpReference()
@@ -206,17 +238,16 @@ def down_sample(u_fine, grid_fine, grid_coarse):
 
     return u_coarse
 
-def compute_convergence(source_order):
-    u0_ref, u_ref, grid_ref = compute_reference_solution()
-    # u0_ref, u_ref, grid_ref = load_reference_solution()
+def compute_convergence(well_balancing):
+    u0_ref, u_ref, grid_ref = load_reference_solution()
     du_ref = u_ref - u0_ref
 
-    resolutions = 2**np.arange(3, 12) + 6
+    resolutions = 2**np.arange(3, 11) + 6
 
     err = np.empty((4, resolutions.size))
     for l, res in enumerate(resolutions):
         gaussian_bump = GaussianBumpConvergence()
-        gaussian_bump.source_order = source_order
+        gaussian_bump.well_balancing = well_balancing
         gaussian_bump.n_cells = res
         grid = gaussian_bump.grid
         n_ghost = grid.n_ghost
@@ -238,10 +269,13 @@ def compute_convergence(source_order):
 
 if __name__ == '__main__':
     all_errors, all_rates = [], []
-    all_labels = ["$\\rho_{(1)}$", "$E_{(1)}$", "$\\rho_{(2)}$", "$E_{(2)}$"]
+    all_labels = ["$\\rho_{(0)}$", "$E_{(0)}$",
+                  "$\\rho_{(1)}$", "$E_{(1)}$",
+                  "$\\rho_{(2)}$", "$E_{(2)}$"]
 
-    for order in [2, 4]:
-        error, rate, resolutions = compute_convergence(order)
+    # compute_reference_solution()
+    for well_balancing in ["naive", "wb_o2", "wb_o4"]:
+        error, rate, resolutions = compute_convergence(well_balancing)
         all_errors += error
         all_rates += rate
 
