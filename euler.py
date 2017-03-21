@@ -73,8 +73,8 @@ class Euler(EulerModel):
         dphi_dx = self.gravity.dphi_dx(x)
 
         source[0,...] = 0.0
-        source[1,...] = 0.0
-        source[2,...] = -u[0,...]*dphi_dx
+        source[1,...] = -u[0,...]*dphi_dx
+        source[2,...] = 0.0
         source[3,...] = -u[1,...]*dphi_dx
 
         return source
