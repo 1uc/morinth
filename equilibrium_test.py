@@ -63,58 +63,53 @@ def test_weno_well_balanced():
 
 def test_weno_well_balanced_order():
     model = Euler(gamma = 1.4, gravity = 1.0, specific_gas_constant = 1.0)
-    resolutions = 2**np.arange(4, 10)
+    resolutions = 2**np.arange(4, 11) + 6
+    all_x_rel = [-0.5, -0.25, 0.0, 0.25, 0.5]
 
     ic = GaussianBumpIC(model)
-    ic.p_amplitude, ic.rho_amplitude = 1e-5, 1e-5
+    ic.p_amplitude, ic.rho_amplitude = 1e-5, 1e-0
 
-    err_plus = np.empty((4, len(resolutions)))
-    err_minus = np.empty((4, len(resolutions)))
+    err_rho = np.empty((5, len(resolutions)))
+    rate_rho = np.empty((5, len(resolutions)-1))
 
-    for l, resolution in enumerate(np.nditer(resolutions)):
-        grid = Grid([0.0, 1.0], resolution, 3)
-        equilibrium = IsothermalEquilibrium(grid, model)
-        weno = OptimalWENO(EquilibriumStencil(grid, equilibrium, model))
+    for k, x_rel in enumerate(all_x_rel):
+        for l, resolution in enumerate(resolutions):
+            grid = Grid([0.0, 1.0], resolution, 3)
+            equilibrium = IsothermalEquilibrium(grid, model)
+            weno = OptimalWENO(EquilibriumStencil(grid, equilibrium, model))
 
-        u0 = ic(grid)
-        u_plus, u_minus = weno(u0, axis=0)
-        w_plus = model.primitive_variables(u_plus)
-        w_minus = model.primitive_variables(u_minus)
+            u0 = ic(grid)
+            u_weno = weno.trace_values(u0, x_rel=x_rel)[:,1:-1,...]
 
-        x = grid.edges[3:-3,...,0]
-        w_exact = ic.point_values(x)
+            x = grid.cell_centers[3:-3,...,0] + x_rel*grid.dx
+            u_exact = ic.point_values(x)
 
-        err_plus[:,l] = linf_error(w_plus, w_exact)
-        err_minus[:,l] = linf_error(w_minus, w_exact)
+            err_rho[k,l] = linf_error(u_weno[0,...], u_exact[0,...])
 
-    rho_rate_plus = convergence_rate(err_plus[0,...], resolutions-6)
-    rho_rate_minus = convergence_rate(err_minus[0,...], resolutions-6)
+        rate_rho[k,:] = convergence_rate(err_rho[k,...], resolutions-6)
 
-    p_rate_plus = convergence_rate(err_plus[3,...], resolutions-6)
-    p_rate_minus = convergence_rate(err_minus[3,...], resolutions-6)
+    all_errors = [err_rho[k,...] for k in range(err_rho.shape[0])]
+    all_rates = [rate_rho[k,...] for k in range(rate_rho.shape[0])]
+    all_labels = ["$\\rho({:.2f})$".format(x_rel) for x_rel in all_x_rel]
+
+    filename_base = "img/code-validation/weno_well-balanced"
+
+    table = LatexConvergenceTable(all_errors, all_rates, resolutions-6, all_labels)
+    table.write(filename_base + ".tex")
+
+    plot = ConvergencePlot(trend_orders=[5])
+    plot(all_errors, resolutions-6, all_labels)
+    plot.save(filename_base)
 
     def achieves(observed_rate, expected):
         assert np.all(np.abs(observed_rate[-2:] - expected) < 0.1)
 
-    achieves(rho_rate_plus, 5.0)
-    achieves(rho_rate_minus, 5.0)
-    achieves(p_rate_plus, 5.0)
-    achieves(p_rate_minus, 5.0)
+    for i, x_rel in enumerate(all_x_rel):
+        expected_rate = 5.0 if x_rel != 0.0 else 4.0
+        assert np.all(np.abs(rate_rho[i,-3:] - expected_rate) < 0.2)
 
-    all_errors = [err_plus[0,:], err_minus[0,:], err_plus[3,:], err_minus[3,:]]
-    all_rates = [rho_rate_plus, rho_rate_minus, p_rate_plus, p_rate_minus]
-    all_labels = ["$\\rho^+$", "$\\rho^-$", "$p^+$", "$p^-$"]
 
-    filename_base = "img/code-validation/weno_well-balanced"
-
-    table = LatexConvergenceTable(all_errors, all_rates, resolutions, all_labels)
-    table.write(filename_base + ".tex")
-
-    plot = ConvergencePlot(trend_orders=[5])
-    plot(all_errors, resolutions, all_labels)
-    plot.save(filename_base)
-
-def test_weno_in_equiblibrium():
+def test_cell_averages_to_points_values():
     model = Euler(gamma = 1.4, gravity = 1.0, specific_gas_constant = 1.0)
     grid = Grid([0.0, 1.0], 16, 3)
     equilibrium = IsothermalEquilibrium(grid, model)
