@@ -16,10 +16,10 @@ import testing_tools
 def check_source_term_order(order):
     model = Euler(gamma=1.4, gravity = 1.2, specific_gas_constant=2.0)
     quadrature = GaussLegendre(5)
-    all_resolutions = 2**np.arange(3, 10) + 6
+    all_resolutions = 2**np.arange(3, 11) + 6
 
     ic = GaussianBumpIC(model)
-    ic.p_amplitude, ic.rho_amplitude = 0.0, 10.0
+    ic.p_amplitude, ic.rho_amplitude = 0.0, 0.1
 
     err = np.empty((4, all_resolutions.size))
 
@@ -55,7 +55,7 @@ def test_source_term_order():
         all_rates.append(rates)
 
     filename_base = "img/code-validation/source_term"
-    table = LatexConvergenceTable(all_errors, all_rates, resolutions, all_labels)
+    table = LatexConvergenceTable(all_errors, all_rates, resolutions-6, all_labels)
     table.write(filename_base + ".tex")
 
     plot = ConvergencePlot(trend_orders=[2, 4])

@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from weno import EquilibriumStencil
+from weno import EquilibriumStencil, OptimalWENO
 
 class SourceTerm:
     def __init__(self):
@@ -34,6 +34,7 @@ class BalancedSourceTerm(SourceTerm):
         self.grid = grid
         self.model = model
         self.equilibrium = equilibrium
+        self.weno = OptimalWENO(EquilibriumStencil(grid, equilibrium, model))
         self.order = order
 
     def edge_source(self, u_bar, u_left, u_right, axis):
@@ -88,16 +89,13 @@ class BalancedSourceTerm(SourceTerm):
         n_ghost = self.grid.n_ghost
 
         x_0 = self.x_left()
-        x_1 = self.x_rel(0.25)
+        x_1 = self.x_rel(-0.25)
         x_2 = self.x_ref()
-        x_3 = self.x_rel(0.75)
+        x_3 = self.x_rel(0.25)
         x_4 = self.x_right()
 
-        interpolate = self.density_interpolation(u_bar)
-
-        u_bar = u_bar[:,n_ghost:-n_ghost,...]
-
-        rho_eq_point, p_eq_point, T = equilibrium.point_values(u_bar, x_2)
+        u_bar_inner = u_bar[:,n_ghost:-n_ghost,...]
+        rho_eq_point, p_eq_point, T = equilibrium.point_values(u_bar_inner, x_2)
 
         rho_eq_0, p_eq_0 = equilibrium.extrapolate(p_eq_point, T, x_2, x_0)
         rho_eq_1, p_eq_1 = equilibrium.extrapolate(p_eq_point, T, x_2, x_1)
@@ -105,39 +103,41 @@ class BalancedSourceTerm(SourceTerm):
         rho_eq_3, p_eq_3 = equilibrium.extrapolate(p_eq_point, T, x_2, x_3)
         rho_eq_4, p_eq_4 = equilibrium.extrapolate(p_eq_point, T, x_2, x_4)
 
-        rho_0 = rho_eq_0 + u_left[0,...]
-        rho_1 = rho_eq_1 + interpolate(0.25)
-        rho_2 = rho_eq_2 + interpolate(0.5)
-        rho_3 = rho_eq_3 + interpolate(0.75)
-        rho_4 = rho_eq_4 + u_right[0,...]
+        rho_0 = self.rho(u_bar, x_rel=-0.5)
+        rho_1 = self.rho(u_bar, x_rel=-0.25)
+        rho_2 = self.rho(u_bar, x_rel=0.0)
+        rho_3 = self.rho(u_bar, x_rel=0.25)
+        rho_4 = self.rho(u_bar, x_rel=0.5)
 
         diff = lambda x, y: (y - x)/self.grid.dx
         avg = lambda x, y: 0.5*(x + y)
 
+        # S1 = u_bar_inner[0,...]/rho_eq_2*diff(p_eq_0, p_eq_4)
         S1 = rho_2/rho_eq_2*diff(p_eq_0, p_eq_4)
         S2_a = rho_1/rho_eq_1*diff(p_eq_0, p_eq_2)
         S2_b = rho_3/rho_eq_3*diff(p_eq_2, p_eq_4)
+        # S1 = avg(rho_0, rho_4)/avg(rho_eq_0, rho_eq_4)*diff(p_eq_0, p_eq_4)
+        # S2_a = avg(rho_0, rho_2)/avg(rho_eq_0, rho_eq_2)*diff(p_eq_0, p_eq_2)
+        # S2_b = avg(rho_2, rho_4)/avg(rho_eq_2, rho_eq_4)*diff(p_eq_4, p_eq_4)
 
         S = (4.0*(S2_a + S2_b) - S1)/3.0
 
-        dudt = np.zeros_like(u_bar)
+        dudt = np.zeros_like(u_bar_inner)
         dudt[1,...] = S
-        dudt[3,...] = -u_bar[1,...]*self.model.gravity.dphi_dx(x_2)
+        dudt[3,...] = -u_bar_inner[1,...]*self.model.gravity.dphi_dx(x_2)
 
         return dudt
 
-    def density_interpolation(self, u_bar):
-        return EquilibriumDensityInterpolation(self.grid, self.model, self.equilibrium, u_bar)
-
-    def rho_eq(self, p_eq_point, T, x):
-        return self.equilibrium(p_eq_point, T, self.x_ref(), x)
+    def rho(self, u_bar, x_rel):
+        u = self.weno.trace_values(u_bar, x_rel)
+        return u[0,1:-1,...]
 
     def x_left(self):
         n_ghost = self.grid.n_ghost
         return self.grid.edges[n_ghost:-n_ghost-1,...,0]
 
     def x_rel(self, alpha):
-        return self.x_left() + alpha*(self.x_right() - self.x_left())
+        return self.x_ref() + alpha*self.grid.dx
 
     def x_ref(self):
         n_ghost = self.grid.n_ghost
