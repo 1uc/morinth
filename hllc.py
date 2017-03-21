@@ -78,7 +78,7 @@ class HLLC(object):
         H_tilda = roe_average(HL, HR)
 
         vroe_square = v_tilda**2 + w_tilda**2
-        a_tilda = np.sqrt((model.gamma - 1.0)*(H_tilda - 0.5*vroe_square))
+        a_tilda = np.sqrt((model.eos.gamma - 1.0)*(H_tilda - 0.5*vroe_square))
 
         sL = np.minimum(vL - aL, v_tilda - a_tilda)
         sR = np.maximum(vR + aR, v_tilda + a_tilda)

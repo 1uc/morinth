@@ -69,7 +69,7 @@ class IsothermalEquilibrium:
         return rho_point, p_point, T_tilda
 
     def drho_dxx_per_rho(self, T, x):
-        R = self.model.specific_gas_constant
+        R = self.model.eos.specific_gas_constant
         gravity = self.model.gravity
         dphi_dx = gravity.dphi_dx(x)
         dphi_dxx = gravity.dphi_dxx(x)
@@ -79,7 +79,7 @@ class IsothermalEquilibrium:
 
     def extrapolate(self, p_ref, T_ref, x_ref, x):
         """Extrapolate point-values in a reference point to point-values."""
-        gravity, R = self.model.gravity, self.model.specific_gas_constant
+        gravity, R = self.model.gravity, self.model.eos.specific_gas_constant
 
         p = p_ref*np.exp(-(gravity.phi(x) - gravity.phi(x_ref))/(R*T_ref))
         rho = self.model.rho(p=p, T=T_ref)

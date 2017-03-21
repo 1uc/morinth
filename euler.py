@@ -4,18 +4,16 @@ class EulerModel(object):
     """Euler equations with gravity."""
 
     def __init__(self, gamma, gravity, specific_gas_constant):
-        self.gamma = gamma
+        self.eos = IdealGasLaw(gamma, specific_gas_constant)
 
         if isinstance(gravity, Gravity):
             self.gravity = gravity
         else:
             self.gravity = PointMassGravity(1.0, gravity, 1.0)
 
-        self.specific_gas_constant = specific_gas_constant
-
     def sound_speed(self, u, p):
         """The speed of sound in the system."""
-        return np.sqrt(self.gamma*p/u[0,...])
+        return self.eos.sound_speed(u[0,...], p)
 
     def conserved_variables(self, primitive_variables):
         """Return the conserved variables, given the primitive variables."""
@@ -46,10 +44,10 @@ class EulerModel(object):
         return self.speed(u) + self.sound_speed(u, p)
 
     def temperature(self, rho, p):
-        return p/(rho*self.specific_gas_constant)
+        return self.eos.temperature(rho, p)
 
     def rho(self, p, T):
-        return p/(T*self.specific_gas_constant)
+        return self.eos.rho(p, T)
 
 class Euler(EulerModel):
     def flux(self, u, axis, p=None):
@@ -81,9 +79,12 @@ class Euler(EulerModel):
 
     def pressure(self, u=None, rho=None, T=None):
         if rho is not None and T is not None:
-            return rho*self.specific_gas_constant*T
+            return self.eos.pressure(rho=rho, T=T)
+
         elif u is not None:
-            return (self.gamma-1.0)*(u[3,...] - self.kinetic_energy(u))
+            E_int = u[3,...] - self.kinetic_energy(u)
+            return self.eos.pressure(E_int=E_int, rho=rho)
+
         else:
             raise Exception("Invalid combination of arguments.")
 
@@ -91,7 +92,7 @@ class Euler(EulerModel):
         return 0.5*(u[1,...]**2 + u[2,...]**2)/u[0,...]
 
     def internal_energy(self, p):
-        return p/(self.gamma-1.0)
+        return self.eos.internal_energy(p)
 
     def speed(self, u):
         """Norm of the velocity."""
@@ -211,3 +212,45 @@ class PointMassGravity(Gravity):
 
     def dphi_dxx(self, x):
         return -2.0*self.GM/(x + self.radius)**3
+
+class EquationOfState():
+    pass
+
+class IdealGasLaw(EquationOfState):
+    def __init__(self, gamma, specific_gas_constant):
+        self.gamma = gamma
+        self.specific_gas_constant = specific_gas_constant
+
+    def pressure(self, E_int=None, rho=None, T=None):
+        if T is not None and rho is not None:
+            Rgas = self.specific_gas_constant
+            return rho*Rgas*T
+
+        elif E_int is not None:
+            return (self.gamma-1.0)*E_int
+
+        else:
+            raise Exception("Failed to match a mode.")
+
+    def rho(self, p, T):
+        Rgas = self.specific_gas_constant
+        return p/(Rgas*T)
+
+    def temperature(self, rho, p):
+        Rgas = self.specific_gas_constant
+        return p/(Rgas*rho)
+
+    def sound_speed(self, rho, p):
+        return np.sqrt(self.gamma*p/rho)
+
+    def dp_drho2_s(self, pvars):
+        p = pvars[3,...]
+        rho = pvars[0,...]
+        rho2 = rho*rho
+        a = self.sound_speed(rho, p)
+
+        return self.gamma() * (rho*a - p/rho2)
+
+    def internal_energy(self, p):
+        """Internal energy, not specific internal energy."""
+        return p/(self.gamma - 1.0)

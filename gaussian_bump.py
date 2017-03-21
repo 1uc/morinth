@@ -73,7 +73,7 @@ class GaussianBumpIC(object):
         """Point values of the primitive variables."""
 
         T = self.model.temperature(rho=self.rho_ref, p=self.p_ref)
-        gravity, R = self.model.gravity, self.model.specific_gas_constant
+        gravity, R = self.model.gravity, self.model.eos.specific_gas_constant
 
         w = np.zeros((4,) + x.shape)
         w[0,...] = self.rho_ref*np.exp(-(gravity.phi(x)- gravity.phi(self.x_ref))/(R*T))
