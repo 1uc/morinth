@@ -1,3 +1,4 @@
+import time
 import numpy as np
 
 from burgers import Burgers
@@ -7,7 +8,7 @@ from boundary_conditions import Periodic
 from time_integration import BackwardEuler, BDF2, DIRKa23, DIRKa34
 from runge_kutta import ForwardEuler, SSP2, SSP3, Fehlberg
 from time_loop import TimeLoop
-from time_keeper import FixedDuration, PlotNever
+from time_keeper import FixedDuration, PlotNever, FixedSteps
 from math_tools import convergence_rate
 
 
@@ -61,4 +62,25 @@ def test_mock_ode():
         assert np.all(observed_rate - expected_rate > -0.1), str(single_step)
 
 if __name__ == '__main__':
-    test_mock_ode()
+    bc = lambda x: None
+    plotting_steps = PlotNever()
+
+    solvers = [ ForwardEuler,
+                SSP2,
+                SSP3,
+                Fehlberg
+              ]
+
+    n_steps, dt = 100000, 1e-6
+
+    for Solver in solvers:
+        single_step = Solver(bc, MockROC(dt))
+        time_loop = TimeLoop(single_step, lambda x: None, plotting_steps)
+
+        u0 = np.random.random((1000, 1, 1))
+
+        t0 = time.perf_counter()
+        uT = time_loop(u0, FixedSteps(n_steps))
+        t1 = time.perf_counter()
+
+        print("{:s} : {:.3f} s".format(Solver.__name__, t1 - t0))
