@@ -28,7 +28,7 @@ class ENOBase(object):
         Returns
         -------
         array_like, array_like
-            (W)ENO interpolation at the cell boundary from from the cell
+            (W)ENO interpolation at the cell boundary from the cell
             left/right of the interface.
         """
 
@@ -175,7 +175,7 @@ class OptimalWENO(WENOBase):
     def __init__(self, transform = None):
         super().__init__(transform)
         self.epsilon = 1e-6
-        self._linear_weights = {}
+        self._linear_weights = {0.0: (1, 100, 1)}
 
     def linear_weights(self, x_rel):
         """Linear weights of WENO reconstruction.
@@ -287,13 +287,13 @@ class EquilibriumStencil(object):
 
     def post(self, u, duij, x_rel):
         n_ghost = self.grid.n_ghost
-        cell_centers = self.grid.cell_centers[...]
+        cell_centers = self.grid.cell_centers
         dx = self.grid.dx
 
         x_ref = cell_centers[2:-2,...,0]
-        xij = x_ref + x_rel*dx
         _, p_ref, T_ref = self.equilibrium.point_values(u[:,2:-2,...], x_ref)
 
+        xij = x_ref + x_rel*dx
         uij = np.zeros_like(duij)
         uij[0,...], p_ij = self.equilibrium.extrapolate(p_ref, T_ref, x_ref, xij)
         uij[3,...] = self.model.internal_energy(p_ij)

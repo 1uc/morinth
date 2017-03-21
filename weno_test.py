@@ -21,42 +21,37 @@ def montone_increasing(x):
 def montone_decreasing(x):
     return -np.sign(x - 0.51234567)
 
-def weno_error(resolution):
+def weno_error(resolution, x_rel):
     grid = Grid([0.0, 1.0], resolution, 3)
-    x = grid.cell_centers
+    x = grid.cell_centers[2:-2,...,0] + x_rel*grid.dx
 
     cell_average = GaussLegendre(5)
     u0 = cell_average(grid.edges, sinusoidal).reshape((1, -1))
     weno = OptimalWENO()
 
-    u_plus, u_minus = weno(u0, axis=0)
+    u_approx = weno.trace_values(u0, x_rel=x_rel)
+    u_ref = sinusoidal(x).reshape((1, -1))
 
-    xij = grid.edges
-    u_ref = sinusoidal(xij).reshape((1, -1))
+    return linf_error(u_approx, u_ref)
 
-    err_plus = linf_error(u_plus, u_ref[:,3:-3])
-    err_minus = linf_error(u_minus, u_ref[:,3:-3])
+def weno_convergence(x_rel):
+    resolutions = np.array([10, 20, 40, 80, 160, 320, 640]) + 6
+    err = np.empty((1, resolutions.size))
 
-    return err_plus, err_minus
-
-def test_weno_smooth():
-    resolutions = np.array([16, 26, 46, 86, 166]).reshape((-1,1))
-    err_plus = np.empty((1, resolutions.size))
-    err_minus = np.empty_like(err_plus)
-
-    for l, res in enumerate(np.nditer(resolutions)):
-        err_plus[:,l], err_minus[:,l] = weno_error(res)
+    for l, res in enumerate(resolutions):
+        err[:,l] = weno_error(res, x_rel)
 
     assert_msg = lambda rate: "Observed rate: {:s}".format(str(rate))
 
-    rate_minus = convergence_rate(err_minus, resolutions-6)
-    print(err_minus)
-    assert np.abs(np.max(rate_minus) - 5.0) < 0.1, assert_msg(rate_minus)
+    rate = convergence_rate(err, resolutions-6)
+    expected_rate = 4.0 if x_rel == 0.0 else 5.0
+    assert np.all(np.abs(rate[:,-4:] - expected_rate) < 0.1), assert_msg(rate)
 
-    rate_plus = convergence_rate(err_plus, resolutions-6)
-    print(err_plus)
-    assert np.abs(np.max(rate_plus) - 5.0) < 0.1, assert_msg(rate_plus)
-
+def test_weno_smooth():
+    x_rel = [-0.5, -0.25, 0.0, 0.25, 0.5]
+    print()
+    for x in x_rel:
+        weno_convergence(x)
 
 def increasing_criterium(u_plus, u_minus):
     assert np.all(u_plus <= u_minus + 1e-9)
@@ -129,7 +124,8 @@ def test_p123():
 
 def test_linear_weights():
     C_ref_05 = np.array([1.0/10.0, 3.0/5.0, 3.0/10.0])
-    C_ref_00 = np.array([-0.1125, 1.225, -0.1125])
+    # C_ref_00 = np.array([-0.1125, 1.225, -0.1125])
+    C_ref_00 = np.array([1, 100, 1])
 
     weno = OptimalWENO()
 
