@@ -85,6 +85,7 @@ class GaussianBumpIC(object):
 
 
 class GaussianBump(EulerExperiment):
+
     @property
     def final_time(self):
         return 0.2

@@ -86,4 +86,3 @@ class HLLC(object):
                  / (uR[0,...]*(sR - vR) - uL[0,...]*(sL - vL)))
 
         return sL, s_star, sR
-
