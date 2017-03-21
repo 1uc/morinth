@@ -15,7 +15,7 @@ class FVMRateOfChange:
         self.flux = flux
         self.model = flux.model
         self.reconstruction = with_default(reconstruction, FirstOrderReconstruction())
-        self.source = with_default(source, CenteredSourceTerm(flux.model))
+        self.source = with_default(source, CenteredSourceTerm(self.grid, flux.model))
 
     def __call__(self, u, t):
         n_ghost = self.grid.n_ghost

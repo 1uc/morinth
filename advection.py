@@ -9,7 +9,7 @@ class Advection(object):
     def flux(self, u, axis):
         return self.velocity[axis]*u
 
-    def source(self, u):
+    def source(self, u, x):
         return 0.0
 
     def max_eigenvalue(self, u):

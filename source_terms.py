@@ -8,9 +8,10 @@ class SourceTerm:
         self.needs_volume_source = hasattr(self, "volume_source")
 
 class CenteredSourceTerm(SourceTerm):
-    def __init__(self, model):
+    def __init__(self, grid, model):
         super().__init__()
 
+        self.grid = grid
         self.model = model
 
     def volume_source(self, u_bar, u_left=None, u_right=None):
@@ -21,7 +22,9 @@ class CenteredSourceTerm(SourceTerm):
              u_left : ---
             u_right : ---
         """
-        return self.model.source(u_bar)
+
+        x_center = self.grid.cell_centers[...,0]
+        return self.model.source(u_bar, x_center)
 
 
 class BalancedSourceTerm(SourceTerm):
