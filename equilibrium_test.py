@@ -4,7 +4,7 @@ from weno import OptimalWENO, EquilibriumStencil
 from grid import Grid
 from quadrature import GaussLegendre
 from euler import Euler
-from equilibrium import IsothermalEquilibrium
+from equilibrium import IsothermalEquilibrium, IsentropicEquilibrium
 from gaussian_bump import GaussianBumpIC
 from latex_tables import LatexConvergenceTable
 
@@ -35,6 +35,65 @@ def test_equilibrium_order():
 
     rate = convergence_rate(err[[0,3],...], all_resolutions)
     assert np.all(np.abs(rate - 4.0) < 0.1)
+
+def test_equilibrium_cell_averages():
+    model = Euler(gamma = 1.4, gravity = 1.0, specific_gas_constant = 1.0)
+    all_resolutions = 2**np.arange(4, 8)
+
+    rho_ref, p_ref, x_ref = 1.0, 2.0, 0.0
+    u_ref = np.array([rho_ref, 0.0, 0.0, p_ref])
+
+    quadrature = GaussLegendre(5)
+
+    err_bar = np.empty((2, all_resolutions.size))
+    err_dxx = np.empty((2, all_resolutions.size))
+    for l, res in enumerate(all_resolutions):
+        grid = Grid([0.0, 1.0], res, 0)
+        equilibrium = IsentropicEquilibrium(grid, model)
+
+        rho_point = lambda x: equilibrium.extrapolate(u_ref, x_ref, x)[0]
+        p_point = lambda x: equilibrium.extrapolate(u_ref, x_ref, x)[1]
+        E_point = lambda x: model.internal_energy(p_point(x))
+
+        def dxx(f, x):
+            eps = 1e-4
+            return (f(x-eps) - 2.0*f(x) + f(x+eps))/eps**2
+
+        x = grid.cell_centers[...,0]
+        drho_dxx_ref = dxx(rho_point, x)
+        dE_dxx_ref = dxx(E_point, x)
+
+        w_point = np.zeros((4,) + grid.n_cells)
+        w_point[0,...] = rho_point(x)
+        w_point[3,...] = p_point(x)
+        u_point = model.conserved_variables(w_point)
+
+        drho_dxx_approx, dE_dxx_approx = equilibrium.du_dxx(u_point, x)
+
+        if testing_tools.is_manual_mode():
+            plt.clf()
+            plt.plot(x, dE_dxx_ref, 'k-')
+            plt.plot(x, dE_dxx_approx, 'b-')
+            plt.plot(x, E_point(x), 'g-')
+            plt.show()
+
+        rho_bar = quadrature(grid.edges, rho_point)
+        E_bar = quadrature(grid.edges, E_point)
+
+        u_bar_approx = equilibrium.cell_averages(u_point, x)
+        rho_bar_approx = u_bar_approx[0,...]
+        E_bar_approx = u_bar_approx[3,...]
+
+        err_bar[0,l] = l1_error(rho_bar, rho_bar_approx)
+        err_bar[1,l] = l1_error(E_bar, E_bar_approx)
+
+        err_dxx[0,l] = l1_error(drho_dxx_ref, drho_dxx_approx)
+        err_dxx[1,l] = l1_error(dE_dxx_ref, dE_dxx_approx)
+
+    rate = convergence_rate(err_bar, all_resolutions)
+    assert np.all(np.abs(rate - 4.0) < 0.1)
+    assert np.all(np.abs(err_dxx) < 1e-7)
+
 
 def test_weno_well_balanced():
     model = Euler(gamma = 1.4, gravity = 1.0, specific_gas_constant = 1.0)

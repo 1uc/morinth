@@ -113,3 +113,112 @@ class IsothermalEquilibrium:
         """Compute the difference from equilibrium."""
         du = u - self.reconstruct(u_ref, x_ref, x)
         return du
+
+
+class IsentropicEquilibrium:
+    def __init__(self, grid, model):
+        self.grid = grid
+        self.model = model
+
+    def cell_averages(self, u_point, x):
+        u_bar = np.empty_like(u_point)
+        dx = self.grid.dx
+        dx2_24 = dx*dx/24.0
+
+        drho_dxx, dE_dxx = self.du_dxx(u_point, x)
+
+        u_bar[0,...] = u_point[0,...] + dx2_24*drho_dxx
+        u_bar[1,...] = u_point[1,...]
+        u_bar[2,...] = u_point[2,...]
+        u_bar[3,...] = u_point[3,...] + dx2_24*dE_dxx
+
+        return u_bar
+
+    def point_values(self, u_bar, x_mid):
+        u_point = np.empty_like(u_point)
+        dx = self.grid.dx
+        dx2_24 = dx*dx/24.0
+
+        drho_dxx, dE_dxx = self.du_dxx(u_bar, x)
+
+        u_point[0,...] = u_bar[0,...] - dx2_24*drho_dxx
+        u_point[1,...] = u_bar[1,...]
+        u_point[2,...] = u_bar[2,...]
+        u_point[3,...] = u_bar[3,...] - dx2_24*dE_dxx
+
+        return u_bar
+
+    def du_dxx(self, u, x):
+        rho = u[0,...]
+        rho2 = rho*rho
+        rho4 = rho2*rho2
+
+        e = self.model.specific_internal_energy(u)
+        p = self.model.eos.pressure(rho=rho, e=e)
+        a = self.model.sound_speed(u, p)
+        a2 = a*a
+        a4 = a2*a2
+
+        dphi_dx = self.model.gravity.dphi_dx(x)
+        dphi_dxx = self.model.gravity.dphi_dxx(x)
+        dphi_dx_2 = dphi_dx*dphi_dx
+
+        dp_drho2_s = self.model.eos.dp_drho2_s(rho, p, a)
+
+        drho_dx = - rho/a2 * dphi_dx
+        drho_dx_2 = drho_dx * drho_dx
+        drho_dxx = (1.0/rho - 1.0/a2*dp_drho2_s)*drho_dx_2 - rho/a2 * dphi_dxx
+
+        dp_dx = -rho*dphi_dx
+        dp_dxx = -(drho_dx*dphi_dx + rho*dphi_dxx)
+
+        # d(p/rho)/dx * rho**2
+        dp_rho_dx = rho*dp_dx - p*drho_dx
+        dp_rho_dxx = rho*dp_dxx - p*drho_dxx
+
+        de_dx = -dphi_dx - dp_rho_dx/rho2
+        de_dxx = -dphi_dxx - (rho2*dp_rho_dxx - 2.0*rho*drho_dx*dp_rho_dx)/rho4
+
+        dE_dxx = e*drho_dxx + 2*drho_dx * de_dx + rho*de_dxx
+
+        return drho_dxx, dE_dxx
+
+    def extrapolate(self, u_ref, x_ref, x):
+        """Extrapolate point-value at `x_ref` to point-value at `x`."""
+        rho_ref = u_ref[0,...]
+        p_ref = self.model.pressure(u=u_ref)
+        h_ref = self.model.enthalpy(rho_ref, p_ref)
+
+        # FIXME this assumes ideal gas, which is not appropriate.
+        #    The inverting of the enthalpy should be done separately,
+        #    elsewhere.
+        gamma = self.model.eos.gamma
+        K = p_ref/rho_ref**gamma
+
+        rho = (1/K * (gamma-1)/gamma * self.enthalpy(h_ref, x_ref, x))**(1.0/(gamma-1))
+        p = K * rho**gamma
+
+        return rho, p
+
+    def reconstruct(self, u_bar, x_ref, x):
+        """Reconstruct cell-average at `x_ref` to cell-average at `x`.
+
+        Given the cell-averages at `x_ref` compute the corresponding
+        cell-average of the isentropic hydrostatic equilibrium at `x`.
+        """
+        u_point = self.point_values(u_bar, x_ref)
+        rho, p = self.extrapolate(u_point, x_ref, x)
+
+        w = np.zeros_like(u_bar)
+        w[0,...] = rho
+        w[3,...] = p
+        u = self.model.conserved_variables(w)
+
+        return self.cell_averages(u_bar, x)
+
+    def delta(self, u_ref, x_ref, u, x):
+        return u - self.reconstruct(self, u_ref, x_ref, x)
+
+    def enthalpy(self, h_ref, x_ref, x):
+        gravity = self.model.gravity
+        return h_ref + gravity.phi(x_ref) - gravity.phi(x)

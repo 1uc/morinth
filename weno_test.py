@@ -49,7 +49,6 @@ def weno_convergence(x_rel):
 
 def test_weno_smooth():
     x_rel = [-0.5, -0.25, 0.0, 0.25, 0.5]
-    print()
     for x in x_rel:
         weno_convergence(x)
 

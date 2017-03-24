@@ -46,6 +46,9 @@ class EulerModel(object):
     def temperature(self, rho, p):
         return self.eos.temperature(rho, p)
 
+    def enthalpy(self, rho, p):
+        return self.eos.enthalpy(rho, p)
+
     def rho(self, p, T):
         return self.eos.rho(p, T)
 
@@ -82,8 +85,8 @@ class Euler(EulerModel):
             return self.eos.pressure(rho=rho, T=T)
 
         elif u is not None:
-            E_int = u[3,...] - self.kinetic_energy(u)
-            return self.eos.pressure(E_int=E_int, rho=rho)
+            e = self.specific_internal_energy(u)
+            return self.eos.pressure(e=e, rho=u[0,...])
 
         else:
             raise Exception("Invalid combination of arguments.")
@@ -93,6 +96,10 @@ class Euler(EulerModel):
 
     def internal_energy(self, p):
         return self.eos.internal_energy(p)
+
+    def specific_internal_energy(self, u):
+        E_int = u[3,...] - self.kinetic_energy(u)
+        return E_int / u[0,...]
 
     def speed(self, u):
         """Norm of the velocity."""
@@ -221,13 +228,13 @@ class IdealGasLaw(EquationOfState):
         self.gamma = gamma
         self.specific_gas_constant = specific_gas_constant
 
-    def pressure(self, E_int=None, rho=None, T=None):
+    def pressure(self, e=None, rho=None, T=None):
         if T is not None and rho is not None:
             Rgas = self.specific_gas_constant
             return rho*Rgas*T
 
-        elif E_int is not None:
-            return (self.gamma-1.0)*E_int
+        elif e is not None and rho is not None:
+            return (self.gamma-1.0)*e*rho
 
         else:
             raise Exception("Failed to match a mode.")
@@ -243,14 +250,16 @@ class IdealGasLaw(EquationOfState):
     def sound_speed(self, rho, p):
         return np.sqrt(self.gamma*p/rho)
 
-    def dp_drho2_s(self, pvars):
-        p = pvars[3,...]
-        rho = pvars[0,...]
-        rho2 = rho*rho
-        a = self.sound_speed(rho, p)
+    def dp_drho2_s(self, rho, p, a=None):
+        if a is None:
+            a = self.sound_speed(rho, p)
 
-        return self.gamma() * (rho*a - p/rho2)
+        rho2 = rho*rho
+        return self.gamma * (rho*a*a - p)/rho2
 
     def internal_energy(self, p):
         """Internal energy, not specific internal energy."""
         return p/(self.gamma - 1.0)
+
+    def enthalpy(self, rho, p):
+        return 1.0/(self.gamma - 1.0) * p/rho

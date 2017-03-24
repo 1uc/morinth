@@ -11,7 +11,6 @@ class GaussQuadrature:
 
         return np.sum(wi*f(xi), axis=-1)/dx[:,0]
 
-
 class GaussLegendre(GaussQuadrature):
     """Gauss-Legendre quadrature points and weights."""
 
