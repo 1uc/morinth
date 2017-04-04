@@ -72,10 +72,10 @@ class BalancedSourceTerm(SourceTerm):
         x_right = self.grid.edges[1:,...,0]
         x_left = self.grid.edges[:-1,...,0]
 
-        _, p_eq_point, T = self.equilibrium.point_values(u_bar, x_ref)
+        rho_eq, p_eq = self.equilibrium.point_values(u_bar, x_ref)
 
-        _, p_left = self.equilibrium.extrapolate(p_eq_point, T, x_ref, x_left)
-        _, p_right = self.equilibrium.extrapolate(p_eq_point, T, x_ref, x_right)
+        _, p_left = self.equilibrium.extrapolate(rho_eq, p_eq, x_ref, x_left)
+        _, p_right = self.equilibrium.extrapolate(rho_eq, p_eq, x_ref, x_right)
 
         dudt = np.zeros_like(u_bar)
         dudt[1,...] = (p_right - p_left)/self.grid.dx
@@ -95,13 +95,13 @@ class BalancedSourceTerm(SourceTerm):
         x_4 = self.x_right()
 
         u_bar_inner = u_bar[:,n_ghost:-n_ghost,...]
-        rho_eq_point, p_eq_point, T = equilibrium.point_values(u_bar_inner, x_2)
+        rho_eq, p_eq = equilibrium.point_values(u_bar_inner, x_2)
 
-        rho_eq_0, p_eq_0 = equilibrium.extrapolate(p_eq_point, T, x_2, x_0)
-        rho_eq_1, p_eq_1 = equilibrium.extrapolate(p_eq_point, T, x_2, x_1)
-        rho_eq_2, p_eq_2 = equilibrium.extrapolate(p_eq_point, T, x_2, x_2)
-        rho_eq_3, p_eq_3 = equilibrium.extrapolate(p_eq_point, T, x_2, x_3)
-        rho_eq_4, p_eq_4 = equilibrium.extrapolate(p_eq_point, T, x_2, x_4)
+        rho_eq_0, p_eq_0 = equilibrium.extrapolate(rho_eq, p_eq, x_2, x_0)
+        rho_eq_1, p_eq_1 = equilibrium.extrapolate(rho_eq, p_eq, x_2, x_1)
+        rho_eq_2, p_eq_2 = rho_eq, p_eq
+        rho_eq_3, p_eq_3 = equilibrium.extrapolate(rho_eq, p_eq, x_2, x_3)
+        rho_eq_4, p_eq_4 = equilibrium.extrapolate(rho_eq, p_eq, x_2, x_4)
 
         rho_0 = self.rho(u_bar, x_rel=-0.5)
         rho_1 = self.rho(u_bar, x_rel=-0.25)

@@ -262,4 +262,4 @@ class IdealGasLaw(EquationOfState):
         return p/(self.gamma - 1.0)
 
     def enthalpy(self, rho, p):
-        return 1.0/(self.gamma - 1.0) * p/rho
+        return self.gamma/(self.gamma - 1.0) * p/rho

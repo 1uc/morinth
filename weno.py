@@ -291,11 +291,11 @@ class EquilibriumStencil(object):
         dx = self.grid.dx
 
         x_ref = cell_centers[2:-2,...,0]
-        _, p_ref, T_ref = self.equilibrium.point_values(u[:,2:-2,...], x_ref)
+        rho_ref, p_ref = self.equilibrium.point_values(u[:,2:-2,...], x_ref)
 
         xij = x_ref + x_rel*dx
         uij = np.zeros_like(duij)
-        uij[0,...], p_ij = self.equilibrium.extrapolate(p_ref, T_ref, x_ref, xij)
+        uij[0,...], p_ij = self.equilibrium.extrapolate(rho_ref, p_ref, x_ref, xij)
         uij[3,...] = self.model.internal_energy(p_ij)
 
         return uij + duij

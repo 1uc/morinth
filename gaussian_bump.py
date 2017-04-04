@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 
-from equilibrium import IsothermalEquilibrium
+from equilibrium import IsothermalEquilibrium, IsentropicEquilibrium
 from euler_experiment import EulerExperiment
 from boundary_conditions import Outflow, IsothermalOutflow
 from visualize import EquilibriumGraphs, DensityGraph, ConvergencePlot
@@ -19,8 +19,10 @@ from latex_tables import LatexConvergenceTable
 
 
 class GaussianBumpIC(object):
-    def __init__(self, model):
+    def __init__(self, model, equilibrium):
         self.model = model
+        self.equilibrium = equilibrium
+
         self.p_amplitude = 1.0e-5
         self.rho_amplitude = 1.0e-5
         self.sigma = 0.05
@@ -64,7 +66,7 @@ class GaussianBumpIC(object):
 
     def back_ground(self, grid):
         x = grid.cell_centers[:,0]
-        equilibrium = IsothermalEquilibrium(model=self.model, grid=grid)
+        equilibrium = self.equilibrium
         u_bar_ref = equilibrium.cell_averages(self.u_ref, self.x_ref)
 
         return equilibrium.reconstruct(u_bar_ref, self.x_ref, x)
@@ -72,13 +74,11 @@ class GaussianBumpIC(object):
     def point_values(self, x):
         """Point values of the primitive variables."""
 
-        T = self.model.temperature(rho=self.rho_ref, p=self.p_ref)
-        gravity, R = self.model.gravity, self.model.eos.specific_gas_constant
+        equilibrium = self.equilibrium
+        rho_ref, p_ref, x_ref = self.rho_ref, self.p_ref, self.x_ref
 
         w = np.zeros((4,) + x.shape)
-        w[0,...] = self.rho_ref*np.exp(-(gravity.phi(x)- gravity.phi(self.x_ref))/(R*T))
-        w[3,...] = self.model.pressure(rho=w[0,...], T=T)
-
+        w[0,...], w[3,...] = equilibrium.extrapolate(rho_ref, p_ref, x_ref, x)
         dw = self.delta(x)
 
         return w + dw
@@ -100,7 +100,8 @@ class GaussianBump(EulerExperiment):
 
     @property
     def initial_condition(self):
-        ic = GaussianBumpIC(self.model)
+        equilibrium = self.thermodynamic_equilibrium(self.grid, self.model)
+        ic = GaussianBumpIC(self.model, equilibrium)
         ic.p_amplitude, ic.rho_amplitude = 1e-5, 1e-5
 
         return ic
@@ -131,6 +132,14 @@ class GaussianBump(EulerExperiment):
             raise Exception("Wrong `well_balancing`.")
 
     @property
+    def thermodynamic_equilibrium(self):
+        return self._thermodynamic_equilibrium
+
+    @thermodynamic_equilibrium.setter
+    def thermodynamic_equilibrium(self, rhs):
+        self._thermodynamic_equilibrium = rhs
+
+    @property
     def source(self):
         mode = self.well_balancing
 
@@ -157,7 +166,7 @@ class GaussianBump(EulerExperiment):
     def equilibrium(self):
         mode = self.well_balancing
         if mode == "wb_o2" or mode == "wb_o4":
-            return IsothermalEquilibrium(self.grid, self.model)
+            return self.thermodynamic_equilibrium(self.grid, self.model)
 
         elif mode == "naive":
             return None
@@ -197,26 +206,29 @@ class GaussianBumpReference(GaussianBumpConvergence):
         return 2**13 + 6
 
 
-def compute_reference_solution():
+def compute_reference_solution(Equilibrium, label):
     gaussian_bump = GaussianBumpReference()
+    gaussian_bump.thermodynamic_equilibrium = Equilibrium
     grid = gaussian_bump.grid
 
     u0 = gaussian_bump.initial_condition.back_ground(grid)
     u_ref = gaussian_bump()
 
-    np.save("data/gaussian_bump_background.npy", u0)
-    np.save("data/gaussian_bump_reference.npy", u_ref)
+    filename_base = "data/gaussian_bump-{:s}".format(label)
+    np.save(filename_base + "_background.npy", u0)
+    np.save(filename_base + "_reference.npy", u_ref)
 
-    with open("data/gaussian_bump_grid.pkl", 'wb') as f:
+    with open(fileame_base + "_grid.pkl", 'wb') as f:
         pickle.dump(grid, f)
 
     return u0, u_ref, grid
 
-def load_reference_solution():
-    u0_ref = np.load("data/gaussian_bump_background.npy")
-    u_ref = np.load("data/gaussian_bump_reference.npy")
+def load_reference_solution(label):
+    filename_base = "data/gaussian_bump-{:s}".format(label)
+    u0_ref = np.load(filename_base + "_background.npy")
+    u_ref = np.load(filename_base + "_reference.npy")
 
-    with open("data/gaussian_bump_grid.pkl", 'rb') as f:
+    with open(filename_base + "_grid.pkl", 'rb') as f:
         grid = pickle.load(f)
 
     return u0_ref, u_ref, grid
@@ -239,8 +251,8 @@ def down_sample(u_fine, grid_fine, grid_coarse):
 
     return u_coarse
 
-def compute_convergence(well_balancing):
-    u0_ref, u_ref, grid_ref = load_reference_solution()
+def compute_convergence(Equilibrium, label, well_balancing):
+    u0_ref, u_ref, grid_ref = load_reference_solution(label)
     du_ref = u_ref - u0_ref
 
     resolutions = 2**np.arange(3, 11) + 6
@@ -248,6 +260,7 @@ def compute_convergence(well_balancing):
     err = np.empty((4, resolutions.size))
     for l, res in enumerate(resolutions):
         gaussian_bump = GaussianBumpConvergence()
+        gaussian_bump.thermodynamic_equilibrium = Equilibrium
         gaussian_bump.well_balancing = well_balancing
         gaussian_bump.n_cells = res
         grid = gaussian_bump.grid
@@ -268,22 +281,26 @@ def compute_convergence(well_balancing):
     return [err[0,...], err[3,...]], [rho_rate, E_int_rate], resolutions
 
 
-if __name__ == '__main__':
+def run_compute_convergence(Equilibrium, label):
     all_errors, all_rates = [], []
     all_labels = ["$\\rho_{(0)}$", "$E_{(0)}$",
                   "$\\rho_{(1)}$", "$E_{(1)}$",
                   "$\\rho_{(2)}$", "$E_{(2)}$"]
 
-    # compute_reference_solution()
+    compute_reference_solution(Equilibrium, label)
     for well_balancing in ["naive", "wb_o2", "wb_o4"]:
-        error, rate, resolutions = compute_convergence(well_balancing)
+        error, rate, resolutions = compute_convergence(Equilibrium, label, well_balancing)
         all_errors += error
         all_rates += rate
 
-    filename_base = "img/code-validation/gaussian_bump"
+    filename_base = "img/code-validation/gaussian_bump-{:s}".format(label)
     latex_table = LatexConvergenceTable(all_errors, all_rates, resolutions-6, all_labels)
     latex_table.write(filename_base + ".tex")
 
     plot = ConvergencePlot([4, 5])
     plot(all_errors, resolutions-6, all_labels)
     plot.save(filename_base)
+
+if __name__ == "__main__":
+    # run_compute_convergence(IsothermalEquilibrium, "isothermal")
+    run_compute_convergence(IsentropicEquilibrium, "isentropic")

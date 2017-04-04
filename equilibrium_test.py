@@ -19,14 +19,13 @@ def test_equilibrium_order():
     model = Euler(gamma = 1.4, gravity = 1.0, specific_gas_constant = 1.0)
     all_resolutions = 2**np.arange(4, 8)
 
-    ic = GaussianBumpIC(model)
-    ic.p_amplitude, ic.rho_amplitude = 0.0, 1.0
-
     quadrature = GaussLegendre(5)
     err = np.empty((4, all_resolutions.size))
 
     for l, res in enumerate(all_resolutions):
         grid = Grid([0.0, 1.0], res, 0)
+        ic = GaussianBumpIC(model, IsothermalEquilibrium(grid, model))
+        ic.p_amplitude, ic.rho_amplitude = 0.0, 1.0
 
         ic_point_values = lambda x: model.conserved_variables(ic.point_values(x))
         reference = quadrature(grid.edges, ic_point_values)
@@ -51,8 +50,8 @@ def test_equilibrium_cell_averages():
         grid = Grid([0.0, 1.0], res, 0)
         equilibrium = IsentropicEquilibrium(grid, model)
 
-        rho_point = lambda x: equilibrium.extrapolate(u_ref, x_ref, x)[0]
-        p_point = lambda x: equilibrium.extrapolate(u_ref, x_ref, x)[1]
+        rho_point = lambda x: equilibrium.extrapolate(rho_ref, p_ref, x_ref, x)[0]
+        p_point = lambda x: equilibrium.extrapolate(rho_ref, p_ref, x_ref, x)[1]
         E_point = lambda x: model.internal_energy(p_point(x))
 
         def dxx(f, x):
@@ -92,22 +91,52 @@ def test_equilibrium_cell_averages():
 
     rate = convergence_rate(err_bar, all_resolutions)
     assert np.all(np.abs(rate - 4.0) < 0.1)
-    assert np.all(np.abs(err_dxx) < 1e-7)
+    assert np.all(np.abs(err_dxx) < 1e-6)
 
+def equilibrium_back_and_forth(Equilibrium, label):
+    model = Euler(gamma = 1.4, gravity = 1.0, specific_gas_constant = 1.0)
+    all_resolutions = 2**np.arange(4, 8)
+
+    rho_ref, p_ref, x_ref = 1.0, 2.0, 0.0
+    u_ref = np.array([rho_ref, 0.0, 0.0, p_ref])
+
+    for l, res in enumerate(all_resolutions):
+        grid = Grid([0.0, 1.0], res, 0)
+        x = grid.cell_centers[..., 0]
+        equilibrium = Equilibrium(grid, model)
+
+        rho_point = lambda x: equilibrium.extrapolate(rho_ref, p_ref, x_ref, x)[0]
+        p_point = lambda x: equilibrium.extrapolate(rho_ref, p_ref, x_ref, x)[1]
+        E_point = lambda x: model.internal_energy(p_point(x))
+
+        w_point = np.zeros((4,) + grid.n_cells)
+        w_point[0,...] = rho_point(x)
+        w_point[3,...] = p_point(x)
+        u_point = model.conserved_variables(w_point)
+
+        u_bar = equilibrium.cell_averages(u_point, x)
+        rho_approx, p_approx = equilibrium.point_values(u_bar, x)
+
+        assert np.all(np.abs(w_point[0,...] - rho_approx) < 1e-12)
+        assert np.all(np.abs(w_point[3,...] - p_approx) < 1e-12)
+
+def test_equilibrium_back_and_forth():
+    equilibrium_back_and_forth(IsothermalEquilibrium, "isothermal")
+    equilibrium_back_and_forth(IsentropicEquilibrium, "isentropic")
 
 def test_weno_well_balanced():
     model = Euler(gamma = 1.4, gravity = 1.0, specific_gas_constant = 1.0)
     resolutions = np.array([16, 32, 64, 128]).reshape((-1,1))
     p_ref, T_ref, x_ref = 1.0, 2.0, 0.0
 
-    ic = GaussianBumpIC(model)
-    ic.p_amplitude, ic.rho_amplitude = 0.0, 0.0
-
     for resolution in resolutions:
         plt.clf()
 
         grid = Grid([0.0, 1.0], resolution, 3)
         equilibrium = IsothermalEquilibrium(grid, model)
+        ic = GaussianBumpIC(model, equilibrium)
+        ic.p_amplitude, ic.rho_amplitude = 0.0, 0.0
+
         weno = OptimalWENO(EquilibriumStencil(grid, equilibrium, model))
 
         u0 = ic(grid)
@@ -120,13 +149,10 @@ def test_weno_well_balanced():
             plt.plot(grid.edges[3:-3,0], u_minus[0,:], '<')
             plt.show()
 
-def test_weno_well_balanced_order():
+def weno_well_balanced_order(Equilibrium, label):
     model = Euler(gamma = 1.4, gravity = 1.0, specific_gas_constant = 1.0)
     resolutions = 2**np.arange(4, 11) + 6
     all_x_rel = [-0.5, -0.25, 0.0, 0.25, 0.5]
-
-    ic = GaussianBumpIC(model)
-    ic.p_amplitude, ic.rho_amplitude = 1e-5, 1e-0
 
     err_rho = np.empty((5, len(resolutions)))
     rate_rho = np.empty((5, len(resolutions)-1))
@@ -134,7 +160,10 @@ def test_weno_well_balanced_order():
     for k, x_rel in enumerate(all_x_rel):
         for l, resolution in enumerate(resolutions):
             grid = Grid([0.0, 1.0], resolution, 3)
-            equilibrium = IsothermalEquilibrium(grid, model)
+            equilibrium = Equilibrium(grid, model)
+            ic = GaussianBumpIC(model, equilibrium)
+            ic.p_amplitude, ic.rho_amplitude = 1e-5, 1e-0
+
             weno = OptimalWENO(EquilibriumStencil(grid, equilibrium, model))
 
             u0 = ic(grid)
@@ -151,7 +180,7 @@ def test_weno_well_balanced_order():
     all_rates = [rate_rho[k,...] for k in range(rate_rho.shape[0])]
     all_labels = ["$\\rho({:.2f})$".format(x_rel) for x_rel in all_x_rel]
 
-    filename_base = "img/code-validation/weno_well-balanced"
+    filename_base = "img/code-validation/weno_eq-{:s}".format(label)
 
     table = LatexConvergenceTable(all_errors, all_rates, resolutions-6, all_labels)
     table.write(filename_base + ".tex")
@@ -167,13 +196,16 @@ def test_weno_well_balanced_order():
         expected_rate = 5.0 if x_rel != 0.0 else 4.0
         assert np.all(np.abs(rate_rho[i,-3:] - expected_rate) < 0.2)
 
+def test_weno_well_balanced_order():
+    weno_well_balanced_order(IsothermalEquilibrium, "isothermal")
+    weno_well_balanced_order(IsentropicEquilibrium, "isentropic")
 
-def test_cell_averages_to_points_values():
+def cell_averages_to_points_values(Equilibrium, label):
     model = Euler(gamma = 1.4, gravity = 1.0, specific_gas_constant = 1.0)
     grid = Grid([0.0, 1.0], 16, 3)
-    equilibrium = IsothermalEquilibrium(grid, model)
+    equilibrium = Equilibrium(grid, model)
 
-    ic = GaussianBumpIC(model)
+    ic = GaussianBumpIC(model, equilibrium)
     ic.p_amplitude, ic.rho_amplitude = 0.0, 0.0
     rho_ref = ic.rho_ref
     p_ref = ic.p_ref
@@ -183,7 +215,11 @@ def test_cell_averages_to_points_values():
     u0 = ic(grid)
 
     x = grid.cell_centers[...,0]
-    rho_exact, p_exact = equilibrium.extrapolate(p_ref, T_ref, x_ref, x)
-    rho_point, p_point, _ = equilibrium.point_values(u0, x)
+    rho_exact, p_exact = equilibrium.extrapolate(rho_ref, p_ref, x_ref, x)
+    rho_point, p_point = equilibrium.point_values(u0, x)
 
     assert np.all(np.abs(rho_point - rho_exact) < 1e-14)
+
+def test_cell_averages_to_point_values():
+    cell_averages_to_points_values(IsothermalEquilibrium, "isothermal")
+    cell_averages_to_points_values(IsentropicEquilibrium, "isentropic")

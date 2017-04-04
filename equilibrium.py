@@ -1,4 +1,6 @@
 import numpy as np
+import scipy
+from algebraic_solvers import fixpoint_iteration
 
 class IsothermalEquilibrium:
     """Equilibrium reconstruction of point-values."""
@@ -66,7 +68,7 @@ class IsothermalEquilibrium:
         rho_point = u_bar[0,...]/(1 + dx2_24*drho_dxx_per_rho)
         p_point = model.pressure(rho=rho_point, T=T_tilda)
 
-        return rho_point, p_point, T_tilda
+        return rho_point, p_point
 
     def drho_dxx_per_rho(self, T, x):
         R = self.model.eos.specific_gas_constant
@@ -77,9 +79,10 @@ class IsothermalEquilibrium:
 
         return drho_dxx_per_rho
 
-    def extrapolate(self, p_ref, T_ref, x_ref, x):
+    def extrapolate(self, rho_ref, p_ref, x_ref, x):
         """Extrapolate point-values in a reference point to point-values."""
         gravity, R = self.model.gravity, self.model.eos.specific_gas_constant
+        T_ref = self.model.eos.temperature(rho=rho_ref, p=p_ref)
 
         p = p_ref*np.exp(-(gravity.phi(x) - gravity.phi(x_ref))/(R*T_ref))
         rho = self.model.rho(p=p, T=T_ref)
@@ -90,11 +93,12 @@ class IsothermalEquilibrium:
         """Reconstruct the equilibrium cell-average in another cell."""
         model = self.model
 
-        rho_point, p_point, T_tilda = self.point_values(u_bar, x_ref)
+        rho_point, p_point = self.point_values(u_bar, x_ref)
+        T_tilda = model.eos.temperature(rho=rho_point, p=p_point)
         dx2_24 = self.grid.dx**2 / 24.0
         drho_dxx_per_rho = self.drho_dxx_per_rho(T_tilda, x)
 
-        rho_eq, p_eq = self.extrapolate(p_point, T_tilda, x_ref, x)
+        rho_eq, p_eq = self.extrapolate(rho_point, p_point, x_ref, x)
         E_int_eq = model.internal_energy(p=p_eq)
 
         rho_eq_bar = rho_eq*(1.0 + dx2_24*drho_dxx_per_rho)
@@ -134,19 +138,40 @@ class IsentropicEquilibrium:
 
         return u_bar
 
-    def point_values(self, u_bar, x_mid):
-        u_point = np.empty_like(u_point)
+    def point_values(self, u_bar, x):
+        if u_bar.ndim == 1:
+            u_bar = u_bar.reshape((-1,1))
+            x = np.array([x])
+
         dx = self.grid.dx
         dx2_24 = dx*dx/24.0
 
-        drho_dxx, dE_dxx = self.du_dxx(u_bar, x)
+        u_star = np.empty_like(u_bar)
+        u_star[1,...] = u_bar[1,...]
+        u_star[2,...] = u_bar[2,...]
 
-        u_point[0,...] = u_bar[0,...] - dx2_24*drho_dxx
-        u_point[1,...] = u_bar[1,...]
-        u_point[2,...] = u_bar[2,...]
-        u_point[3,...] = u_bar[3,...] - dx2_24*dE_dxx
+        def F(rho_E_star):
+            u_star[0,...] = rho_E_star[0,...]
+            u_star[3,...] = rho_E_star[1,...]
 
-        return u_bar
+            drho_dxx, dE_dxx = self.du_dxx(u_star, x)
+
+            rho_E = np.empty((2,) + u_star.shape[1:])
+            rho_E[0] = u_bar[0,...] - dx2_24*drho_dxx
+            rho_E[1] = u_bar[3,...] - dx2_24*dE_dxx
+
+            return rho_E
+
+        rho_E, info = fixpoint_iteration(F, u_bar[[0,3],...], full_output=True)
+
+        u_point = np.zeros_like(u_bar)
+        u_point[0,...] = rho_E[0,...]
+        u_point[3,...] = rho_E[1,...]
+
+        # print(info)
+
+        p_point = self.model.pressure(u_point)
+        return u_point[0,...], p_point
 
     def du_dxx(self, u, x):
         rho = u[0,...]
@@ -183,10 +208,8 @@ class IsentropicEquilibrium:
 
         return drho_dxx, dE_dxx
 
-    def extrapolate(self, u_ref, x_ref, x):
+    def extrapolate(self, rho_ref, p_ref, x_ref, x):
         """Extrapolate point-value at `x_ref` to point-value at `x`."""
-        rho_ref = u_ref[0,...]
-        p_ref = self.model.pressure(u=u_ref)
         h_ref = self.model.enthalpy(rho_ref, p_ref)
 
         # FIXME this assumes ideal gas, which is not appropriate.
@@ -206,18 +229,18 @@ class IsentropicEquilibrium:
         Given the cell-averages at `x_ref` compute the corresponding
         cell-average of the isentropic hydrostatic equilibrium at `x`.
         """
-        u_point = self.point_values(u_bar, x_ref)
-        rho, p = self.extrapolate(u_point, x_ref, x)
+        rho_point, p_point = self.point_values(u_bar, x_ref)
+        rho, p = self.extrapolate(rho_point, p_point, x_ref, x)
 
-        w = np.zeros_like(u_bar)
-        w[0,...] = rho
-        w[3,...] = p
-        u = self.model.conserved_variables(w)
+        w_eq = np.zeros((u_bar.shape[0],) + x.shape)
+        w_eq[0,...] = rho
+        w_eq[3,...] = p
+        u_eq = self.model.conserved_variables(w_eq)
 
-        return self.cell_averages(u_bar, x)
+        return self.cell_averages(u_eq, x)
 
     def delta(self, u_ref, x_ref, u, x):
-        return u - self.reconstruct(self, u_ref, x_ref, x)
+        return u - self.reconstruct(u_ref, x_ref, x)
 
     def enthalpy(self, h_ref, x_ref, x):
         gravity = self.model.gravity

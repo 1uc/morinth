@@ -151,6 +151,7 @@ class DIRK(ImplicitTimeIntegration):
         u1 = u0 + dt*np.sum(self.tableau.b*self.dudt_buffers, axis=-1)
         self.bc(u1)
 
+
         return u1
 
     def allocate_buffers(self, u):
