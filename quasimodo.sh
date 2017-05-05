@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 #      Author : Luc Grosheintz <forbugrep@zoho.com>
 #     Created : 2015-01-02
@@ -9,7 +9,7 @@ read -r -d '' help_text << EOF
 usage: $(basename $0) (push | pull) [--commit] [--remote <host>]
     Transefer data to or from a remote remote.
 
-    pull    pull data in 'img', optionally specify a stems to match.
+    pull    pull data in 'img'.
     push    copy source to the remote site
 
     --remote <remote> specify the remote location to copy to/from
@@ -50,14 +50,8 @@ do
       ;;
 
     *)
-      if [[ $mode == "pull" ]]
-      then
-        stems="$@"
-        break
-      else
-        echo "$help_text"
-        exit -1
-      fi
+      echo "$help_text"
+      exit -1
       ;;
   esac
 
@@ -79,6 +73,10 @@ case $remote in
     dest='lucg@euler.ethz.ch:~'
     ;;
 
+  ada)
+    dest='lucg@ada-11:~'
+    ;;
+
   *)
     echo "Unknown remote. Only know 'daint' and 'euler'."
     exit -1
@@ -95,6 +93,7 @@ case $mode in
 
   pull)
     rsync -ruv $DRY_RUN "$dest/$(basename $(realpath $PWD))/img/*" img
+    rsync -ruv $DRY_RUN "$dest/$(basename $(realpath $PWD))/data/*" data
     ;;
 
   *)
