@@ -8,23 +8,34 @@ from equilibrium import IsothermalEquilibrium, IsentropicEquilibrium
 from gaussian_bump import GaussianBumpIC
 from latex_tables import LatexConvergenceTable
 
-import matplotlib.pylab as plt
+from matplotlib import rcParams
+
+# matplotlib.rc('text', usetex = True)
+rcParams.update({ 'font.family': 'sans-serif',
+                  'font.size': 15,
+                  'xtick.labelsize': 15,
+                  'ytick.labelsize': 15,
+                  'figure.autolayout': True,
+                  'axes.formatter.limits': (-1, 3)})
+import matplotlib.pyplot as plt
 
 import pytest
 import testing_tools
 from math_tools import convergence_rate, l1_error, linf_error
 from visualize import ConvergencePlot
+from euler import PointMassGravity
 
-def test_equilibrium_order():
-    model = Euler(gamma = 1.4, gravity = 1.0, specific_gas_constant = 1.0)
-    all_resolutions = 2**np.arange(4, 8)
+def equilibrium_order(Equilibrium, label):
+    gravity = PointMassGravity(1.0, 1.0, 1.0)
+    model = Euler(gamma = 1.4, gravity = gravity, specific_gas_constant = 1.0)
+    resolutions = 2**np.arange(4, 11)
 
     quadrature = GaussLegendre(5)
-    err = np.empty((4, all_resolutions.size))
+    err = np.empty((4, resolutions.size))
 
-    for l, res in enumerate(all_resolutions):
+    for l, res in enumerate(resolutions):
         grid = Grid([0.0, 1.0], res, 0)
-        ic = GaussianBumpIC(model, IsothermalEquilibrium(grid, model))
+        ic = GaussianBumpIC(model, Equilibrium(grid, model))
         ic.p_amplitude, ic.rho_amplitude = 0.0, 1.0
 
         ic_point_values = lambda x: model.conserved_variables(ic.point_values(x))
@@ -32,8 +43,26 @@ def test_equilibrium_order():
 
         err[:,l] = l1_error(ic(grid), reference)
 
-    rate = convergence_rate(err[[0,3],...], all_resolutions)
-    assert np.all(np.abs(rate - 4.0) < 0.1)
+    rate = convergence_rate(err, resolutions)
+
+    all_errors = [err[k,...] for k in [0, 3]]
+    all_rates = [rate[k,...] for k in [0, 3]]
+    all_labels = ["$\\rho$", "$E$"]
+
+    filename_base = "img/code-validation/equilibrium_order-{:s}".format(label)
+
+    table = LatexConvergenceTable(all_errors, all_rates, resolutions, all_labels)
+    table.write(filename_base + ".tex")
+
+    plot = ConvergencePlot(trend_orders=[4])
+    plot(all_errors, resolutions, all_labels)
+    plot.save(filename_base)
+
+    assert np.all(np.abs(rate[[0, 3], ...] - 4.0) < 0.1)
+
+def test_equilibrium_order():
+    equilibrium_order(IsothermalEquilibrium, "isothermal")
+    equilibrium_order(IsentropicEquilibrium, "isentropic")
 
 def test_equilibrium_cell_averages():
     model = Euler(gamma = 1.4, gravity = 1.0, specific_gas_constant = 1.0)

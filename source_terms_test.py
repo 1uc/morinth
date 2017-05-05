@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from source_terms import BalancedSourceTerm, EquilibriumDensityInterpolation
+from source_terms import BalancedSourceTerm, EquilibriumDensityInterpolation, UnbalancedSourceTerm
 from grid import Grid
-from euler import Euler
+from euler import Euler, PointMassGravity
 from equilibrium import IsothermalEquilibrium, IsentropicEquilibrium
 from weno import OptimalWENO, EquilibriumStencil
 from gaussian_bump import GaussianBumpIC
@@ -44,7 +44,6 @@ def check_source_term_order(order, Equilibrium):
     rate = convergence_rate(err[1, ...], all_resolutions-6)
     return err[1,...], rate, all_resolutions
 
-
 def source_term_order(Equilibrium, label):
     all_errors, all_rates = [], []
     all_labels = ["$S_{(1)}$", "$S_{(2)}$"]
@@ -67,6 +66,43 @@ def source_term_order(Equilibrium, label):
 def test_source_term_order():
     source_term_order(IsothermalEquilibrium, "isothermal")
     source_term_order(IsentropicEquilibrium, "isentropic")
+
+
+def test_unbalanced_source_term():
+    gravity = PointMassGravity(1.0, 1.0, 1.0)
+    model = Euler(gamma = 1.4, gravity = gravity, specific_gas_constant = 1.0)
+
+    def rho(x):
+        return 2.0 + np.sin(3*np.pi*x) * np.cos(2*np.pi*x)
+
+    def dphi_dx(x):
+        return model.gravity.dphi_dx(x)
+
+    quadrature = GaussLegendre(5)
+
+    all_resolutions = 2**np.arange(4, 10) + 6
+    err = np.empty((1, all_resolutions.size))
+
+    for l, res in enumerate(all_resolutions):
+        grid = Grid([0.0, 1.0], res, 3)
+
+        def ic(x):
+            u0 = np.zeros((4,) + x.shape)
+            u0[0,...] = rho(x)
+            u0[3,...] = 1.0
+
+            return u0
+
+        u_bar = quadrature(grid.edges, ic)
+
+        source_term = UnbalancedSourceTerm(grid, model)
+        s_approx = source_term.volume_source(u_bar)
+        s_ref = quadrature(grid.edges[2:-2,...], lambda x : -rho(x)*dphi_dx(x))
+
+        err[:, l] = l1_error(s_approx[1,...], s_ref)
+
+    rate = convergence_rate(err, all_resolutions-6)
+    assert np.all(np.abs(rate - 4.0) < 0.15)
 
 def test_equilibrium_interpolation():
     n_ghost = 3

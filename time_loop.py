@@ -15,6 +15,7 @@ class TimeLoop(object):
     def __call__(self, u0, time_keeper):
         self.progress_bar.welcome()
         u = u0
+
         dt = self.pick_time_step(u, time_keeper)
 
         if self.plotting_steps.is_plotting_step(time_keeper):

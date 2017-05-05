@@ -23,19 +23,18 @@ class ExplicitRungeKutta(ExplicitTimeIntegration):
         self.allocate_buffers(u0)
 
         k = self.dudt_buffers
-
         k[...,0] = self.rate_of_change(u0, t)
         for s in range(1, self.tableau.stages):
             dt_star = self.tableau.c[s]*dt
             t_star = t + dt_star
 
             u_star = u0 + dt*np.sum(self.tableau.a[s,:s]*k[...,:s], axis=-1)
-            self.bc(u_star)
+            self.bc(u_star, t_star)
 
             k[...,s] = self.rate_of_change(u_star, t_star)
 
         u1 = u0 + dt*np.sum(self.tableau.b*k, axis=-1)
-        self.bc(u1)
+        self.bc(u1, t+dt)
 
         return u1
 
@@ -76,7 +75,7 @@ class SSP2(ExplicitRungeKutta):
         b = np.array([0.5, 0.5])
 
         super().__init__(bc, rate_of_change, ButcherTableau(a, b))
-        self.cfl_number = 0.85
+        self.cfl_number = 0.45
 
 
 class SSP3(ExplicitRungeKutta):

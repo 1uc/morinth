@@ -24,11 +24,10 @@ def test_periodic_bc():
     bc = Periodic(grid)
     old_state = np.copy(state)
 
-    bc(state)
+    bc(state, 0.0)
 
     assert state[:,0,:] == old_state[:,-2,:]
     assert state[:,-1,:] == old_state[:,1,:]
 
     assert state[:,1,:] == old_state[:,1,:]
     assert state[:,-2,:] == old_state[:,-2,:]
-

@@ -44,7 +44,7 @@ class BackwardEuler(ImplicitTimeIntegration):
         F = self.NonlinearEquation(u0, t, dt, self.bc, self.rate_of_change)
         dF = ApproximateJacobian(F, u0, self.epsilon)
         u1 = self.non_linear_solver(F, dF, u0)
-        self.bc(u1)
+        self.bc(u1, t+dt)
 
         return u1
 
@@ -89,7 +89,7 @@ class BDF2(ImplicitTimeIntegration):
         F = self.NonlinearEquation(self.u0, u1, t, dt, self.bc, self.rate_of_change)
         dF = ApproximateJacobian(F, u1, self.epsilon)
         u2 = self.non_linear_solver(F, dF, u1)
-        self.bc(u2)
+        self.bc(u2, t + dt)
 
         # store `u1` for use as `u0` in next iteration.
         self.u0 = u1
@@ -110,7 +110,7 @@ class BDF2(ImplicitTimeIntegration):
             u0, u1, t, dt = self.u0, self.u1, self.t, self.dt
             u = u.reshape(self.shape)
 
-            self.bc(u)
+            self.bc(u, t + dt)
             residual =  u - 4/3*u1 + 1/3*u0 - 2/3*dt*self.rate_of_change(u, t+dt)
             return residual.reshape((-1))
 

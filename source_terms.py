@@ -1,6 +1,8 @@
 import numpy as np
+
 import matplotlib.pyplot as plt
 from weno import EquilibriumStencil, OptimalWENO
+from quadrature import GaussLegendre
 
 class SourceTerm:
     def __init__(self):
@@ -15,7 +17,7 @@ class CenteredSourceTerm(SourceTerm):
         self.model = model
 
     def volume_source(self, u_bar, u_left=None, u_right=None):
-        """Compute the balanced source term of the Euler equations.
+        """Compute the standard second-order, unbalanced source term.
 
         Arguments:
               u_bar : cell-average of the conserved variables
@@ -25,6 +27,45 @@ class CenteredSourceTerm(SourceTerm):
 
         x_center = self.grid.cell_centers[...,0]
         return self.model.source(u_bar, x_center)
+
+
+class UnbalancedSourceTerm(SourceTerm):
+    def __init__(self, grid, model):
+        super().__init__()
+
+        self.grid = grid
+        self.model = model
+        self.weno = OptimalWENO()
+        self.quadrature = GaussLegendre(3)
+
+    def volume_source(self, u_bar, u_left=None, u_right=None):
+        """Compute the 5-th order, unbalanced source term.
+
+        Arguments:
+              u_bar : cell-average of the conserved variables
+             u_left : ---
+            u_right : ---
+        """
+
+        grid = self.grid
+        weno = self.weno
+        model = self.model
+        quadrature = self.quadrature
+
+        all_x_rel = 0.5*quadrature.points
+        weights = quadrature.weights * 0.5
+
+        u = [ weno.trace_values(u_bar, x_rel) for x_rel in all_x_rel ]
+        s = [ model.source(uu, self.x_abs(x_rel)[2:-2,...])
+              for uu, x_rel in zip(u, all_x_rel) ]
+
+        s_tot = np.empty_like(u_bar)
+        s_tot[:,2:-2,...] = sum( ww*ss for ww, ss in zip(weights, s) )
+        return s_tot
+
+    def x_abs(self, x_rel):
+        cell_centers, dx = self.grid.cell_centers, self.grid.dx
+        return cell_centers[...,0] + x_rel*dx
 
 
 class BalancedSourceTerm(SourceTerm):

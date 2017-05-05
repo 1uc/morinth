@@ -26,7 +26,7 @@ def with_mask(Solver, mask, cfl_number):
     return lambda bc, mock_roc: Solver(bc, mock_roc, mask, cfl_number)
 
 def test_mock_ode():
-    bc = lambda x: None
+    bc = lambda x, t: None
     plotting_steps = PlotNever()
     mask = np.array([True])
 
@@ -62,7 +62,7 @@ def test_mock_ode():
         assert np.all(observed_rate - expected_rate > -0.1), str(single_step)
 
 if __name__ == '__main__':
-    bc = lambda x: None
+    bc = lambda x, t: None
     plotting_steps = PlotNever()
 
     solvers = [ ForwardEuler,

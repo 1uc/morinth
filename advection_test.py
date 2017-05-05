@@ -124,4 +124,3 @@ def test_convergence_rate():
     # print("")
     # print(err)
     # print(convergence_rate(err, np.array(all_resolutions)-6))
-

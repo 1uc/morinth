@@ -105,6 +105,20 @@ class Euler(EulerModel):
         """Norm of the velocity."""
         return np.sqrt((u[1,...]**2 + u[2,...]**2))/u[0,...]
 
+    def scale_height(self, u, x):
+        eos = self.eos
+        gravity = self.gravity
+
+        if isinstance(eos, IdealGasLaw):
+            g = gravity.dphi_dx(x)
+            R = eos.specific_gas_constant
+            T = self.temperature(u[0,...], self.pressure(u))
+
+            return (R*T)/g
+
+        else:
+            raise Exception("Implement scale-height for this equation of state.")
+
 class QuasiLinearEuler(EulerModel):
     """Euler equations in quasilinear form in terms of the primitive variables.
 

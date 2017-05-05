@@ -5,7 +5,7 @@ from grid import Grid
 from quadrature import GaussLegendre
 from euler import Euler
 
-import matplotlib.pylab as plt
+import matplotlib.pyplot as plt
 
 import pytest
 from testing_tools import is_manual_mode

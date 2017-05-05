@@ -1,4 +1,5 @@
 import itertools
+import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from coding_tools import with_default
@@ -8,7 +9,7 @@ class PlottingBase(object):
         self.grid = grid
         self.base_name = base_name
         self.n_plots = 0
-        plt.clf()
+        # plt.clf()
 
     def __call__(self, u):
         self.plot(u)
@@ -44,7 +45,7 @@ class SimpleGraph(PlottingBase):
         return u[0, ...] - self.back_ground
 
     def easy_style(self):
-        return "wo"
+        return "ko"
 
 
 class ColormapWithArrows(PlottingBase):
@@ -168,6 +169,15 @@ class Markers:
         return next(self.sequence)
 
 
+class CombineIO:
+    def __init__(self, *args):
+        self.all_io_objects = args
+
+    def __call__(self, u):
+        for obj in self.all_io_objects:
+            obj(u)
+
+
 class ConvergencePlot:
     def __init__(self, trend_orders=None):
         self.trend_orders = with_default(trend_orders, [])
@@ -214,3 +224,28 @@ class ConvergencePlot:
 
     def ylabel(self):
         plt.ylabel("Error")
+
+class DumpToDisk:
+    def __init__(self, grid, base_name, background=None):
+        self.filename_pattern = base_name + "_data-{:04d}.npy"
+        self.current_snapshot = 0
+
+        self.save_grid(grid, base_name)
+
+        if background is not None:
+            self.save_background(background, base_name)
+
+    def __call__(self, u):
+        filename = self.filename_pattern.format(self.current_snapshot)
+        np.save(filename, u)
+
+        self.current_snapshot += 1
+
+    def save_grid(self, grid, base_name):
+        filename = base_name + "_grid.pkl"
+        with open(filename, "wb") as f:
+            pickle.dump(grid, f)
+
+    def save_background(self, background, base_name):
+        filename = base_name + "_background.npy"
+        np.save(filename, background)
