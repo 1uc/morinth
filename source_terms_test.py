@@ -99,7 +99,7 @@ def test_unbalanced_source_term():
         s_approx = source_term.volume_source(u_bar)
         s_ref = quadrature(grid.edges[2:-2,...], lambda x : -rho(x)*dphi_dx(x))
 
-        err[:, l] = l1_error(s_approx[1,...], s_ref)
+        err[:, l] = l1_error(s_approx[1,2:-2,...], s_ref)
 
     rate = convergence_rate(err, all_resolutions-6)
     assert np.all(np.abs(rate - 4.0) < 0.15)
