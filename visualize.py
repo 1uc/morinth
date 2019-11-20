@@ -249,3 +249,17 @@ class DumpToDisk:
     def save_background(self, background, base_name):
         filename = base_name + "_background.npy"
         np.save(filename, background)
+
+
+class DumpToDiskWithTime(DumpToDisk):
+    def __init__(self, grid, base_name, time_keeper, background=None):
+        super().__init__(grid, base_name, background)
+
+        self.time_keeper = time_keeper
+        self.filename_pattern_time = base_name + "_time-{:04d}.npy"
+
+    def __call__(self, u):
+        filename = self.filename_pattern_time.format(self.current_snapshot)
+        np.save(filename, self.time_keeper.t)
+
+        super().__call__(u)

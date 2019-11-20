@@ -17,6 +17,27 @@ class Periodic(BoundaryCondition):
             u[:,:,-n_ghost:] = u[:,:,n_ghost:2*n_ghost]
 
 
+class ConstantBoundary(BoundaryCondition):
+    def __init__(self, grid, uL, uR):
+        assert grid.n_dims == 1
+
+        self.n_ghost = grid.n_ghost
+
+        self.left = np.transpose(np.array(self.n_ghost * [uL]))
+        self.right = np.transpose(np.array(self.n_ghost * [uR]))
+
+    def __call__(self, u, t):
+        n_ghost = self.n_ghost
+
+        u[:, :n_ghost] = self.left
+        u[:, -n_ghost:] = self.right
+
+
+class ZeroBurgersBoundary(ConstantBoundary):
+    def __init__(self, grid):
+        super().__init__(grid, np.array([0.0]), np.array([0.0]))
+
+
 class Outflow(BoundaryCondition):
     def __call__(self, u, t):
         n_ghost = self.grid.n_ghost
