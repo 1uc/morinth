@@ -8,6 +8,7 @@ from visualize import DumpToDiskWithTime
 from time_keeper import PlotAtFixedInterval
 from euler_experiment import BurgersExperiment
 
+
 class BurgersSineWave(BurgersExperiment):
     @property
     def domain(self):
@@ -49,4 +50,3 @@ class BurgersSineWave(BurgersExperiment):
 if __name__ == "__main__":
     burgers_sine_wave = BurgersSineWave()
     burgers_sine_wave()
-

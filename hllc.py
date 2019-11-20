@@ -82,6 +82,7 @@ class HLLC(object):
 
         sL = np.minimum(vL - aL, v_tilda - a_tilda)
         sR = np.maximum(vR + aR, v_tilda + a_tilda)
+
         s_star = ( (uR[axis+1,...]*(sR - vR) - uL[axis+1,...]*(sL - vL) + pL - pR)
                  / (uR[0,...]*(sR - vR) - uL[0,...]*(sL - vL)))
 

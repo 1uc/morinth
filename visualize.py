@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from coding_tools import with_default
 
+
 class PlottingBase(object):
     def __init__(self, grid, base_name):
         self.grid = grid
@@ -39,7 +40,7 @@ class SimpleGraph(PlottingBase):
 
     def xlim(self):
         n_ghost = self.grid.n_ghost
-        plt.xlim((self.grid.edges[0,0], self.grid.edges[-1,0]))
+        plt.xlim((self.grid.edges[0, 0], self.grid.edges[-1, 0]))
 
     def transform_scalar(self, u):
         return u[0, ...] - self.back_ground
@@ -52,9 +53,8 @@ class ColormapWithArrows(PlottingBase):
     def __init__(self, grid, base_name):
         super().__init__(grid, base_name)
 
-        self.contourf_kwargs = {'cmap': 'viridis'}
+        self.contourf_kwargs = {"cmap": "viridis"}
         self.quiver_kwargs = {}
-
 
     def plot(self, u):
         plt.clf()
@@ -66,27 +66,28 @@ class ColormapWithArrows(PlottingBase):
         plt.contourf(X, Y, scalar, 50, **self.contourf_kwargs)
         plt.colorbar()
 
-        quiv = plt.quiver(X[::10,::10],
-                          Y[::10,::10],
-                          vector[0,::10,::10],
-                          vector[1,::10,::10],
-                          **self.quiver_kwargs)
-
+        quiv = plt.quiver(
+            X[::10, ::10],
+            Y[::10, ::10],
+            vector[0, ::10, ::10],
+            vector[1, ::10, ::10],
+            **self.quiver_kwargs
+        )
 
         # plt.quiverkey(quiv, 1, -0.18, *quiver_label(max_speed(v)))
 
     def transform_vector(self, u):
-        return u[1:3,...] / u[0,...]
+        return u[1:3, ...] / u[0, ...]
 
 
 class DensityColormap(ColormapWithArrows):
     def transform_scalar(self, u):
-        return u[0,...]
+        return u[0, ...]
 
 
 class LogDensityColormap(ColormapWithArrows):
     def transform_scalar(self, u):
-        return np.log10(u[0,...])
+        return np.log10(u[0, ...])
 
 
 class PressureColormap(ColormapWithArrows):
@@ -102,10 +103,12 @@ class LogPressureColormap(PressureColormap):
     def transform_scalar(self, u):
         return np.log10(self.model.pressure(u))
 
+
 class MultiplePlots(PlottingBase):
     def __call__(self, u):
         for plot in self.all_plots:
             plot(u)
+
 
 class EulerColormaps(MultiplePlots):
     def __init__(self, grid, base_name, model):
@@ -132,12 +135,12 @@ class PressureGraph(SimpleGraph):
 
 class XVelocityGraph(SimpleGraph):
     def transform_scalar(self, u):
-        return u[1, ...]/u[0, ...] - self.back_ground
+        return u[1, ...] / u[0, ...] - self.back_ground
 
 
 class YVelocityGraph(SimpleGraph):
     def transform_scalar(self, u):
-        return u[2, ...]/u[0, ...] - self.back_ground
+        return u[2, ...] / u[0, ...] - self.back_ground
 
 
 class EulerGraphs(MultiplePlots):
@@ -151,15 +154,16 @@ class EulerGraphs(MultiplePlots):
 
 class EquilibriumGraphs(MultiplePlots):
     def __init__(self, grid, base_name, model, u0):
-        density_plot = DensityGraph(grid, base_name + "-rho", u0[0,...])
-        vx_plot = XVelocityGraph(grid, base_name + "-vx", u0[1,...]/u0[0,...])
+        density_plot = DensityGraph(grid, base_name + "-rho", u0[0, ...])
+        vx_plot = XVelocityGraph(grid, base_name + "-vx", u0[1, ...] / u0[0, ...])
         pressure_plot = PressureGraph(grid, base_name + "-p", model, model.pressure(u0))
 
         self.all_plots = [density_plot, pressure_plot, vx_plot]
 
+
 class Markers:
     def __init__(self, markers=None):
-        self.markers = with_default(markers, ['^', 'v', '<', '>', '+', 'x'])
+        self.markers = with_default(markers, ["^", "v", "<", ">", "+", "x"])
         self.sequence = itertools.cycle(self.markers)
 
     def __iter__(self):
@@ -191,13 +195,13 @@ class ConvergencePlot:
 
         self.trend_line(all_errors, resolution)
 
-        plt.yscale('log')
-        plt.xscale('log')
+        plt.yscale("log")
+        plt.xscale("log")
 
         self.xlabel()
         self.ylabel()
 
-        plt.legend(loc='best')
+        plt.legend(loc="best")
 
     def trend_line(self, all_errors, resolution_):
         resolution = resolution_.astype(float)
@@ -205,12 +209,12 @@ class ConvergencePlot:
         r = self.trend_orders[-1]
 
         min_error = min([np.min(err) for err in all_errors])
-        x0 = min_error*N**r
+        x0 = min_error * N ** r
 
         for k, rate in enumerate(self.trend_orders):
-            offset = 2.0 + 1.0*(len(self.trend_orders) - k)
-            errors = offset * x0 * n**(rate - r) * resolution**-rate
-            plt.plot(resolution, errors, 'k-', label="$O(N^{{-{:d}}})$".format(rate))
+            offset = 2.0 + 1.0 * (len(self.trend_orders) - k)
+            errors = offset * x0 * n ** (rate - r) * resolution ** -rate
+            plt.plot(resolution, errors, "k-", label="$O(N^{{-{:d}}})$".format(rate))
 
     def save(self, filename_base):
         plt.savefig(filename_base + ".eps")
@@ -224,6 +228,7 @@ class ConvergencePlot:
 
     def ylabel(self):
         plt.ylabel("Error")
+
 
 class DumpToDisk:
     def __init__(self, grid, base_name, background=None):
