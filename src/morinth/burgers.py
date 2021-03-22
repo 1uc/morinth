@@ -18,10 +18,10 @@ class VariableBurgers(object):
     """Burgers equation is a simple non-linear PDE with a coefficient."""
 
     def __init__(self, a):
-        self._a = a
+        self.a = a
 
     def flux(self, u, axis):
-        return 0.5 * kself._a * u[axis, ...] * u
+        return 0.5 * self.a * u[axis, ...] * u
 
     def source(self, u, x):
         return 0.0

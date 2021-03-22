@@ -1,7 +1,7 @@
 import numpy as np
 
 from morinth.advection import Advection
-from morinth.burgers import Burgers
+from morinth.burgers import Burgers, VariableBurgers
 from morinth.euler import Euler
 from morinth.shallow_water import ShallowWater
 
@@ -157,15 +157,18 @@ class BurgersExperiment(NumericalExperiment):
 class VariableBurgersExperiment(NumericalExperiment):
     @property
     def a(self):
-        return self._a
+        return self.model.a
 
     @a.setter
     def a(self, a):
-        self._a = a
+        self.model.a = a
 
     @property
     def model(self):
-        return VariableBurgers(self.a)
+        if not hasattr(self, "_model"):
+            self._model = VariableBurgers(a=None)
+
+        return self._model
 
     @property
     def visualize(self):
