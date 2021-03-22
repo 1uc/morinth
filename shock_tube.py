@@ -3,11 +3,11 @@
 
 import numpy as np
 
-from boundary_conditions import Outflow
-from weno import StableWENO, OptimalWENO
-from rusanov import Rusanov
+from morinth.boundary_conditions import Outflow
+from morinth.weno import StableWENO, OptimalWENO
+from morinth.rusanov import Rusanov
 
-from euler_experiment import EulerExperiment
+from morinth.euler_experiment import EulerExperiment
 
 class ShockTubeIC:
     """Toro's shock-tube."""

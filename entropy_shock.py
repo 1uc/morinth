@@ -3,9 +3,9 @@
 
 import numpy as np
 
-from euler_experiment import EulerExperiment
-from quadrature import GaussLegendre
-from boundary_conditions import Outflow
+from morinth.euler_experiment import EulerExperiment
+from morinth.quadrature import GaussLegendre
+from morinth.boundary_conditions import Outflow
 
 class EntropyShockIC(object):
     def __init__(self, model):

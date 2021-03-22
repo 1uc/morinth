@@ -1,24 +1,24 @@
 import numpy as np
 
-from advection import Advection
-from burgers import Burgers
-from euler import Euler
-from shallow_water import ShallowWater
+from morinth.advection import Advection
+from morinth.burgers import Burgers
+from morinth.euler import Euler
+from morinth.shallow_water import ShallowWater
 
-from hllc import HLLC
-from rusanov import Rusanov
+from morinth.hllc import HLLC
+from morinth.rusanov import Rusanov
 
-from weno import StableWENO, ENO, OptimalWENO
-from runge_kutta import ForwardEuler, SSP3, Fehlberg
+from morinth.weno import StableWENO, ENO, OptimalWENO
+from morinth.runge_kutta import ForwardEuler, SSP3, Fehlberg
 
-from grid import Grid
-from time_keeper import PlotEveryNthStep, FixedDuration
-from boundary_conditions import Periodic
-from visualize import SimpleGraph, EulerGraphs, EulerColormaps
+from morinth.grid import Grid
+from morinth.time_keeper import PlotEveryNthStep, FixedDuration
+from morinth.boundary_conditions import Periodic
+from morinth.visualize import SimpleGraph, EulerGraphs, EulerColormaps
 
-from finite_volume_fluxes import FVMRateOfChange, FirstOrderReconstruction
-from time_loop import TimeLoop
-from progress_bar import ProgressBar
+from morinth.finite_volume_fluxes import FVMRateOfChange, FirstOrderReconstruction
+from morinth.time_loop import TimeLoop
+from morinth.progress_bar import ProgressBar
 
 
 class NumericalExperiment(object):

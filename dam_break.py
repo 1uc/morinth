@@ -3,8 +3,8 @@
 
 import numpy as np
 
-from boundary_conditions import Outflow
-from euler_experiment import ShallowWaterExperiment
+from morinth.boundary_conditions import Outflow
+from morinth.euler_experiment import ShallowWaterExperiment
 
 class DamBreakIC(object):
     def __call__(self, grid):

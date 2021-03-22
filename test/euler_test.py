@@ -1,6 +1,6 @@
 import numpy as np
 
-from euler import Euler, QuasiLinearEuler
+from morinth.euler import Euler, QuasiLinearEuler
 
 def test_eigenvector():
     model = QuasiLinearEuler(gravity = 0.0, gamma = 1.4, specific_gas_constant = 1.0)

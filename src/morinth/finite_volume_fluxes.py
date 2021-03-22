@@ -1,13 +1,13 @@
 import numpy as np
 
-from euler import Euler
-from hllc import HLLC
-from rusanov import Rusanov
-from weno import ENO, OptimalWENO
-from runge_kutta import ForwardEuler, SSP3
-from source_terms import CenteredSourceTerm
+from morinth.euler import Euler
+from morinth.hllc import HLLC
+from morinth.rusanov import Rusanov
+from morinth.weno import ENO, OptimalWENO
+from morinth.runge_kutta import ForwardEuler, SSP3
+from morinth.source_terms import CenteredSourceTerm
 
-from coding_tools import with_default
+from morinth.coding_tools import with_default
 
 class FVMRateOfChange:
     def __init__(self, grid, flux, reconstruction=None, source=None):

@@ -1,8 +1,8 @@
 import numpy as np
 import scipy.integrate
 
-from quadrature import GaussLegendre
-from grid import Grid
+from morinth.quadrature import GaussLegendre
+from morinth.grid import Grid
 
 def sinusoidal(x):
     x = (x - 10.0)/100.0

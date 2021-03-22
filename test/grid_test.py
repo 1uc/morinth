@@ -1,6 +1,6 @@
 import numpy as np
 
-from grid import Grid
+from morinth.grid import Grid
 
 import pytest
 

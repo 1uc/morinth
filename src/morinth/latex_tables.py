@@ -1,5 +1,5 @@
 import itertools
-from math_tools import convergence_rate
+from morinth.math_tools import convergence_rate
 
 class LatexConvergenceTable(object):
     """Format convergence data as LaTeX `tabular`."""

@@ -1,6 +1,6 @@
 import numpy as np
 import scipy
-from algebraic_solvers import fixpoint_iteration
+from morinth.algebraic_solvers import fixpoint_iteration
 
 class IsothermalEquilibrium:
     """Equilibrium reconstruction of point-values."""

@@ -1,16 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from source_terms import BalancedSourceTerm, EquilibriumDensityInterpolation, UnbalancedSourceTerm
-from grid import Grid
-from euler import Euler, PointMassGravity
-from equilibrium import IsothermalEquilibrium, IsentropicEquilibrium
-from weno import OptimalWENO, EquilibriumStencil
-from gaussian_bump import GaussianBumpIC
-from quadrature import GaussLegendre
-from math_tools import l1_error, linf_error, convergence_rate
-from latex_tables import LatexConvergenceTable
-from visualize import ConvergencePlot
+from morinth.source_terms import BalancedSourceTerm, EquilibriumDensityInterpolation, UnbalancedSourceTerm
+from morinth.grid import Grid
+from morinth.euler import Euler, PointMassGravity
+from morinth.equilibrium import IsothermalEquilibrium, IsentropicEquilibrium
+from morinth.weno import OptimalWENO, EquilibriumStencil
+from morinth.gaussian_bump import GaussianBumpIC
+from morinth.quadrature import GaussLegendre
+from morinth.math_tools import l1_error, linf_error, convergence_rate
+from morinth.latex_tables import LatexConvergenceTable
+from morinth.visualize import ConvergencePlot
 import testing_tools
 
 def check_source_term_order(order, Equilibrium):

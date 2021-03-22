@@ -1,15 +1,15 @@
 import time
 import numpy as np
 
-from burgers import Burgers
-from rusanov import Rusanov
-from grid import Grid
-from boundary_conditions import Periodic
-from time_integration import BackwardEuler, BDF2, DIRKa23, DIRKa34
-from runge_kutta import ForwardEuler, SSP2, SSP3, Fehlberg
-from time_loop import TimeLoop
-from time_keeper import FixedDuration, PlotNever, FixedSteps
-from math_tools import convergence_rate
+from morinth.burgers import Burgers
+from morinth.rusanov import Rusanov
+from morinth.grid import Grid
+from morinth.boundary_conditions import Periodic
+from morinth.time_integration import BackwardEuler, BDF2, DIRKa23, DIRKa34
+from morinth.runge_kutta import ForwardEuler, SSP2, SSP3, Fehlberg
+from morinth.time_loop import TimeLoop
+from morinth.time_keeper import FixedDuration, PlotNever, FixedSteps
+from morinth.math_tools import convergence_rate
 
 
 class MockROC(object):

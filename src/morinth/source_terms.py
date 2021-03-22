@@ -1,8 +1,8 @@
 import numpy as np
 
 import matplotlib.pyplot as plt
-from weno import EquilibriumStencil, OptimalWENO
-from quadrature import GaussLegendre
+from morinth.weno import EquilibriumStencil, OptimalWENO
+from morinth.quadrature import GaussLegendre
 
 class SourceTerm:
     def __init__(self):

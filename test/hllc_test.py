@@ -1,9 +1,9 @@
 import numpy as np
 
-from euler import Euler
-from hllc import HLLC
-from rusanov import Rusanov
-from flux_test import ContinuityTestSuite
+from morinth.euler import Euler
+from morinth.hllc import HLLC
+from morinth.rusanov import Rusanov
+from morinth.flux_test import ContinuityTestSuite
 
 import pytest
 

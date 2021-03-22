@@ -1,5 +1,5 @@
 import numpy as np
-from progress_bar import SilentProgressBar
+from morinth.progress_bar import SilentProgressBar
 
 class TimeLoop(object):
     def __init__(self, single_step, visualize, plotting_steps, progress_bar = None):

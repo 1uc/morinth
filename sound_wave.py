@@ -2,10 +2,10 @@
 # encoding: utf-8
 import numpy as np
 
-from euler_experiment import EulerExperiment
-from weno import OptimalWENO
-from boundary_conditions import Periodic
-from math_tools import gaussian
+from morinth.euler_experiment import EulerExperiment
+from morinth.weno import OptimalWENO
+from morinth.boundary_conditions import Periodic
+from morinth.math_tools import gaussian
 
 class SoundWaveIC(object):
     """Small smooth pressure bump."""

@@ -1,8 +1,8 @@
 import numpy as np
 
-from jacobian import ApproximateJacobian
-from newton import Newton
-from butcher import ButcherTableau
+from morinth.jacobian import ApproximateJacobian
+from morinth.newton import Newton
+from morinth.butcher import ButcherTableau
 
 class TimeIntegration(object):
     """Interface for time-integration."""

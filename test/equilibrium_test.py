@@ -1,12 +1,12 @@
 import numpy as np
 
-from weno import OptimalWENO, EquilibriumStencil
-from grid import Grid
-from quadrature import GaussLegendre
-from euler import Euler
-from equilibrium import IsothermalEquilibrium, IsentropicEquilibrium
-from gaussian_bump import GaussianBumpIC
-from latex_tables import LatexConvergenceTable
+from morinth.weno import OptimalWENO, EquilibriumStencil
+from morinth.grid import Grid
+from morinth.quadrature import GaussLegendre
+from morinth.euler import Euler
+from morinth.equilibrium import IsothermalEquilibrium, IsentropicEquilibrium
+from morinth.gaussian_bump import GaussianBumpIC
+from morinth.latex_tables import LatexConvergenceTable
 
 from matplotlib import rcParams
 

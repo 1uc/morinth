@@ -1,5 +1,5 @@
 import numpy as np
-from equilibrium import IsothermalEquilibrium
+from morinth.equilibrium import IsothermalEquilibrium
 
 
 class BoundaryCondition(object):

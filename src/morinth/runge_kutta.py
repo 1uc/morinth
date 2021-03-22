@@ -1,7 +1,7 @@
 import numpy as np
 
-from time_integration import ExplicitTimeIntegration
-from butcher import ButcherTableau
+from morinth.time_integration import ExplicitTimeIntegration
+from morinth.butcher import ButcherTableau
 
 
 class ExplicitRungeKutta(ExplicitTimeIntegration):

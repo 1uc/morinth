@@ -2,10 +2,10 @@
 # encoding: utf-8
 
 import numpy as np
-from euler import *
-from gaussian_bump import *
-from equilibrium import *
-from grid import *
+from morinth.euler import *
+from morinth.gaussian_bump import *
+from morinth.equilibrium import *
+from morinth.grid import *
 
 gravity = PointMassGravity(gravitational_constant=800.0, mass=3000.0, radius=1000.0)
 euler = Euler(gamma=1.4, gravity=gravity, specific_gas_constant=0.01)

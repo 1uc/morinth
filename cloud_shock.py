@@ -5,8 +5,8 @@
 
 import numpy as np
 
-from boundary_conditions import Outflow
-from euler_experiment import EulerExperiment2D
+from morinth.boundary_conditions import Outflow
+from morinth.euler_experiment import EulerExperiment2D
 
 class CloudShockIC:
     def __init__(self, model):

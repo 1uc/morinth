@@ -2,19 +2,19 @@ import numpy as np
 
 import matplotlib.pylab as plt
 
-from advection import Advection
-from rusanov import Rusanov
-from grid import Grid
-from boundary_conditions import Periodic
-from finite_volume_fluxes import FVMRateOfChange
-from runge_kutta import ForwardEuler, Fehlberg
-from time_loop import TimeLoop
-from time_keeper import FixedDuration, PlotNever
-from quadrature import GaussLegendre
-from math_tools import l1_error, convergence_rate
-from euler_experiment import AdvectionExperiment
-from progress_bar import SilentProgressBar
-from weno import OptimalWENO
+from morinth.advection import Advection
+from morinth.rusanov import Rusanov
+from morinth.grid import Grid
+from morinth.boundary_conditions import Periodic
+from morinth.finite_volume_fluxes import FVMRateOfChange
+from morinth.runge_kutta import ForwardEuler, Fehlberg
+from morinth.time_loop import TimeLoop
+from morinth.time_keeper import FixedDuration, PlotNever
+from morinth.quadrature import GaussLegendre
+from morinth.math_tools import l1_error, convergence_rate
+from morinth.euler_experiment import AdvectionExperiment
+from morinth.progress_bar import SilentProgressBar
+from morinth.weno import OptimalWENO
 
 import pytest
 

@@ -1,14 +1,15 @@
 import numpy as np
-from burgers import Burgers
-from rusanov import Rusanov
-from grid import Grid
-from boundary_conditions import Periodic
-from finite_volume_fluxes import FVMRateOfChange
-from time_integration import BackwardEuler
-from runge_kutta import ForwardEuler
-from time_loop import TimeLoop
-from visualize import SimpleGraph
-from time_keeper import FixedDuration, PlotAtFixedInterval, PlotEveryNthStep
+
+from morinth.burgers import Burgers
+from morinth.rusanov import Rusanov
+from morinth.grid import Grid
+from morinth.boundary_conditions import Periodic
+from morinth.finite_volume_fluxes import FVMRateOfChange
+from morinth.time_integration import BackwardEuler
+from morinth.runge_kutta import ForwardEuler
+from morinth.time_loop import TimeLoop
+from morinth.visualize import SimpleGraph
+from morinth.time_keeper import FixedDuration, PlotAtFixedInterval, PlotEveryNthStep
 
 import pytest
 

@@ -1,6 +1,6 @@
 import numpy as np
 
-from euler import Euler
+from morinth.euler import Euler
 
 class RoeAverage(object):
     def __init__(self, rho_left, rho_right):

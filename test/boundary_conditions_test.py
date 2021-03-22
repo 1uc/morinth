@@ -1,7 +1,7 @@
 import numpy as np
 
-from grid import Grid
-from boundary_conditions import Periodic
+from morinth.grid import Grid
+from morinth.boundary_conditions import Periodic
 
 import pytest
 

@@ -3,12 +3,12 @@
 
 import numpy as np
 
-from gaussian_bump import EquilibriumExperiment
-from gaussian_bump import EquilibriumConvergenceRates
-from boundary_conditions import PeriodicVelocity
-from euler import LinearGravity
-from time_keeper import PlotLast, PlotNever, PlotEveryNthStep
-from runge_kutta import *
+from morinth.gaussian_bump import EquilibriumExperiment
+from morinth.gaussian_bump import EquilibriumConvergenceRates
+from morinth.boundary_conditions import PeriodicVelocity
+from morinth.euler import LinearGravity
+from morinth.time_keeper import PlotLast, PlotNever, PlotEveryNthStep
+from morinth.runge_kutta import *
 
 class WavePropagationIC():
     def __init__(self, model, equilibrium):

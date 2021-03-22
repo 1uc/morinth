@@ -3,10 +3,10 @@
 
 import numpy as np
 
-from boundary_conditions import Periodic, ZeroBurgersBoundary
-from visualize import DumpToDiskWithTime
-from time_keeper import PlotAtFixedInterval
-from euler_experiment import BurgersExperiment
+from morinth.boundary_conditions import Periodic, ZeroBurgersBoundary
+from morinth.visualize import DumpToDiskWithTime
+from morinth.time_keeper import PlotAtFixedInterval
+from morinth.euler_experiment import BurgersExperiment
 
 
 class BurgersSineWave(BurgersExperiment):

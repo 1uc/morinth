@@ -1,6 +1,6 @@
 import numpy as np
 
-from jacobian import ApproximateJacobian
+from morinth.jacobian import ApproximateJacobian
 
 class MockODE(object):
     def __init__(self):

@@ -14,19 +14,19 @@ rcParams.update({ 'font.family': 'sans-serif',
 import matplotlib.pyplot as plt
 import pickle
 
-from equilibrium import IsothermalEquilibrium, IsentropicEquilibrium
-from euler_experiment import EulerExperiment
-from boundary_conditions import Outflow, HydrostaticOutflow
-from visualize import EquilibriumGraphs, DensityGraph, ConvergencePlot, DumpToDisk
-from visualize import CombineIO, EulerGraphs, Markers
-from weno import OptimalWENO, EquilibriumStencil
-from source_terms import BalancedSourceTerm, UnbalancedSourceTerm
-from math_tools import gaussian, l1_error, l1rel_error, linf_error, convergence_rate
-from time_keeper import FixedSteps, PlotNever, PlotLast
-from quadrature import GaussLegendre
-from coding_tools import with_default
-from latex_tables import LatexConvergenceTable
-from euler import LinearGravity, PointMassGravity
+from morinth.equilibrium import IsothermalEquilibrium, IsentropicEquilibrium
+from morinth.euler_experiment import EulerExperiment
+from morinth.boundary_conditions import Outflow, HydrostaticOutflow
+from morinth.visualize import EquilibriumGraphs, DensityGraph, ConvergencePlot, DumpToDisk
+from morinth.visualize import CombineIO, EulerGraphs, Markers
+from morinth.weno import OptimalWENO, EquilibriumStencil
+from morinth.source_terms import BalancedSourceTerm, UnbalancedSourceTerm
+from morinth.math_tools import gaussian, l1_error, l1rel_error, linf_error, convergence_rate
+from morinth.time_keeper import FixedSteps, PlotNever, PlotLast
+from morinth.quadrature import GaussLegendre
+from morinth.coding_tools import with_default
+from morinth.latex_tables import LatexConvergenceTable
+from morinth.euler import LinearGravity, PointMassGravity
 
 
 class GaussianBumpIC(object):

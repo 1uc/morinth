@@ -1,15 +1,15 @@
 import numpy as np
 
-from weno import OptimalWENO, LagrangePolynomials
-from grid import Grid
-from quadrature import GaussLegendre
-from euler import Euler
+from morinth.weno import OptimalWENO, LagrangePolynomials
+from morinth.grid import Grid
+from morinth.quadrature import GaussLegendre
+from morinth.euler import Euler
 
 import matplotlib.pyplot as plt
 
 import pytest
-from testing_tools import is_manual_mode
-from math_tools import convergence_rate, l1_error, linf_error
+from morinth.testing_tools import is_manual_mode
+from morinth.math_tools import convergence_rate, l1_error, linf_error
 
 def sinusoidal(x):
     fx = np.sin(2.0*np.pi*x) * np.cos(2.0*np.pi*x)**2
