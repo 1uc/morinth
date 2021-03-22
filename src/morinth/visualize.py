@@ -6,6 +6,15 @@ import matplotlib.pyplot as plt
 from morinth.coding_tools import with_default
 
 
+class KeepInMemory:
+    def __init__(self, time_keeper, snapshots):
+        self.time_keeper = time_keeper
+        self.snapshots = snapshots
+
+    def __call__(self, u):
+        self.snapshots.append({"t": self.time_keeper.t, "u": np.copy(u)})
+
+
 class PlottingBase(object):
     def __init__(self, grid, base_name):
         self.grid = grid
