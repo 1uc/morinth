@@ -8,8 +8,10 @@ from morinth.euler import Euler
 import matplotlib.pyplot as plt
 
 import pytest
-from morinth.testing_tools import is_manual_mode
+import morinth.testing_tools as testing_tools
+from morinth.testing_tools import pytest_config
 from morinth.math_tools import convergence_rate, l1_error, linf_error
+from morinth.io import ensure_directory_exists
 
 def sinusoidal(x):
     fx = np.sin(2.0*np.pi*x) * np.cos(2.0*np.pi*x)**2
@@ -62,7 +64,7 @@ def decreasing_criterium(u_plus, u_minus):
     assert np.all(u_plus[:,1:] - u_plus[:,:-1] <= 1e-9)
     assert np.all(u_minus[:,1:] - u_minus[:,:-1] <= 1e-9)
 
-def test_weno_discontinuous():
+def test_weno_discontinuous(pytest_config):
     weno = OptimalWENO()
     all_resolutions = np.array([10, 20, 40])
     functions = [montone_increasing, montone_decreasing]
@@ -88,10 +90,11 @@ def test_weno_discontinuous():
             filename_pattern= "img/code-validation/weno_jump_{:s}-N{:d}"
             filename = filename_pattern.format(d, resolution)
 
+            ensure_directory_exists(filename=filename)
             plt.savefig(filename + ".png")
             plt.savefig(filename + ".eps")
 
-            if is_manual_mode():
+            if testing_tools.is_manual_mode(pytest_config):
                 plt.show()
 
             plt.clf()

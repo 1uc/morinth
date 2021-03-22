@@ -11,7 +11,9 @@ from morinth.quadrature import GaussLegendre
 from morinth.math_tools import l1_error, linf_error, convergence_rate
 from morinth.latex_tables import LatexConvergenceTable
 from morinth.visualize import ConvergencePlot
-import testing_tools
+
+import morinth.testing_tools as testing_tools
+from morinth.testing_tools import pytest_config
 
 def check_source_term_order(order, Equilibrium):
     model = Euler(gamma=1.4, gravity = 1.2, specific_gas_constant=2.0)
@@ -104,7 +106,7 @@ def test_unbalanced_source_term():
     rate = convergence_rate(err, all_resolutions-6)
     assert np.all(np.abs(rate - 4.0) < 0.15)
 
-def test_equilibrium_interpolation():
+def test_equilibrium_interpolation(pytest_config):
     n_ghost = 3
     model = Euler(gamma = 1.4, gravity = 1.0, specific_gas_constant = 1.0)
 
@@ -149,7 +151,7 @@ def test_equilibrium_interpolation():
         plt.savefig(filename + ".eps")
         plt.savefig(filename + ".png")
 
-        if testing_tools.is_manual_mode():
+        if testing_tools.is_manual_mode(pytest_config):
             plt.show()
 
         err[l] = l1_error(rho_approx[np.newaxis,:], rho_exact[np.newaxis,:])

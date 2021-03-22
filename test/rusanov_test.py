@@ -2,7 +2,8 @@ import numpy as np
 
 from morinth.burgers import Burgers
 from morinth.rusanov import Rusanov
-from morinth.flux_test import ContinuityTestSuite
+
+from flux_test import ContinuityTestSuite
 
 import pytest
 

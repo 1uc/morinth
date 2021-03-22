@@ -2,8 +2,13 @@ import numpy as np
 
 import pytest
 
-def is_manual_mode():
-    return pytest.config.getoption("--manual-mode")
+@pytest.fixture(autouse=True)
+def pytest_config(request):
+    return request.config
 
-mark_manual = pytest.mark.skipif(not is_manual_mode(),
-                                 reason="pass `--run-manual` to run this")
+def is_manual_mode(pytest_config):
+    return pytest_config.getoption("--manual-mode")
+
+def pytest_collection_modifyitems(config, items):
+    mark_manual = pytest.mark.skipif(not is_manual_mode(config),
+                                     reason="pass `--run-manual` to run this")

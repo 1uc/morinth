@@ -20,10 +20,13 @@ rcParams.update({ 'font.family': 'sans-serif',
 import matplotlib.pyplot as plt
 
 import pytest
-import testing_tools
-from math_tools import convergence_rate, l1_error, linf_error
-from visualize import ConvergencePlot
-from euler import PointMassGravity
+
+import morinth.testing_tools as testing_tools
+from morinth.testing_tools import pytest_config
+
+from morinth.math_tools import convergence_rate, l1_error, linf_error
+from morinth.visualize import ConvergencePlot
+from morinth.euler import PointMassGravity
 
 def equilibrium_order(Equilibrium, label):
     gravity = PointMassGravity(1.0, 1.0, 1.0)
@@ -64,7 +67,7 @@ def test_equilibrium_order():
     equilibrium_order(IsothermalEquilibrium, "isothermal")
     equilibrium_order(IsentropicEquilibrium, "isentropic")
 
-def test_equilibrium_cell_averages():
+def test_equilibrium_cell_averages(pytest_config):
     model = Euler(gamma = 1.4, gravity = 1.0, specific_gas_constant = 1.0)
     all_resolutions = 2**np.arange(4, 8)
 
@@ -98,7 +101,7 @@ def test_equilibrium_cell_averages():
 
         drho_dxx_approx, dE_dxx_approx = equilibrium.du_dxx(u_point, x)
 
-        if testing_tools.is_manual_mode():
+        if testing_tools.is_manual_mode(pytest_config):
             plt.clf()
             plt.plot(x, dE_dxx_ref, 'k-')
             plt.plot(x, dE_dxx_approx, 'b-')
@@ -153,7 +156,7 @@ def test_equilibrium_back_and_forth():
     equilibrium_back_and_forth(IsothermalEquilibrium, "isothermal")
     equilibrium_back_and_forth(IsentropicEquilibrium, "isentropic")
 
-def test_weno_well_balanced():
+def test_weno_well_balanced(pytest_config):
     model = Euler(gamma = 1.4, gravity = 1.0, specific_gas_constant = 1.0)
     resolutions = np.array([16, 32, 64, 128]).reshape((-1,1))
     p_ref, T_ref, x_ref = 1.0, 2.0, 0.0
@@ -172,7 +175,7 @@ def test_weno_well_balanced():
         u_plus, u_minus = weno(u0, axis=0)
         assert np.all(np.abs(u_plus - u_minus) < 1e-13)
 
-        if testing_tools.is_manual_mode():
+        if testing_tools.is_manual_mode(pytest_config):
             plt.plot(grid.edges[3:-3,0], u_plus[0,:], '>')
             plt.plot(grid.cell_centers[3:-3,0], u0[0,3:-3], 'k_')
             plt.plot(grid.edges[3:-3,0], u_minus[0,:], '<')

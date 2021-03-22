@@ -1,5 +1,7 @@
+import os
 import itertools
 from morinth.math_tools import convergence_rate
+from morinth.io import ensure_directory_exists
 
 class LatexConvergenceTable(object):
     """Format convergence data as LaTeX `tabular`."""
@@ -10,6 +12,8 @@ class LatexConvergenceTable(object):
                               self.footer()])
 
     def write(self, filename):
+        ensure_directory_exists(filename=filename)
+
         with open(filename, "w+") as f:
             f.write(self.table)
 

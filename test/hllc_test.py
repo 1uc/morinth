@@ -3,7 +3,8 @@ import numpy as np
 from morinth.euler import Euler
 from morinth.hllc import HLLC
 from morinth.rusanov import Rusanov
-from morinth.flux_test import ContinuityTestSuite
+
+from flux_test import ContinuityTestSuite
 
 import pytest
 
