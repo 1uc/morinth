@@ -93,15 +93,14 @@ class NumericalExperiment(object):
         if hasattr(self, "_simulation"):
             return self._simulation
         else:
-            self._simulation = TimeLoop(self.single_step,
-                                        self.visualize,
-                                        self.plotting_steps,
-                                        self.progress_bar)
+            self._simulation = TimeLoop(
+                self.single_step, self.visualize, self.plotting_steps, self.progress_bar
+            )
             return self._simulation
 
     @property
     def plotting_steps(self):
-        return PlotEveryNthStep(steps_per_frame = self.steps_per_frame)
+        return PlotEveryNthStep(steps_per_frame=self.steps_per_frame)
 
     @property
     def steps_per_frame(self):
@@ -155,12 +154,30 @@ class BurgersExperiment(NumericalExperiment):
         return SimpleGraph(self.grid, self.output_filename)
 
 
+class VariableBurgersExperiment(NumericalExperiment):
+    @property
+    def a(self):
+        return self._a
+
+    @a.setter
+    def a(self, a):
+        self._a = a
+
+    @property
+    def model(self):
+        return VariableBurgers(self.a)
+
+    @property
+    def visualize(self):
+        return SimpleGraph(self.grid, self.output_filename)
+
+
 class ShallowWaterExperiment(NumericalExperiment):
     """Base class for all shallow-water numerical experiments."""
 
     @property
     def model(self):
-        return ShallowWater(gravity = self.gravity)
+        return ShallowWater(gravity=self.gravity)
 
     @property
     def gravity(self):
@@ -176,9 +193,11 @@ class EulerExperiment(NumericalExperiment):
 
     @property
     def model(self):
-        return Euler(gravity = self.gravity,
-                     gamma = self.gamma,
-                     specific_gas_constant = self.specific_gas_constant)
+        return Euler(
+            gravity=self.gravity,
+            gamma=self.gamma,
+            specific_gas_constant=self.specific_gas_constant,
+        )
 
     @property
     def gravity(self):
@@ -221,4 +240,3 @@ class EulerExperiment2D(EulerExperiment):
         else:
             self._grid = Grid(self.domain, self.resolution, self.n_ghost)
             return self._grid
-
