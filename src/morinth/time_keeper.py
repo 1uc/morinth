@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2021 ETH Zurich, Luc Grosheintz-Laval
+
 class TimeKeeper(object):
     def __init__(self, needs_baby_steps):
         self.needs_baby_steps = needs_baby_steps

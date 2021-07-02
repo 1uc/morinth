@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2021 ETH Zurich, Luc Grosheintz-Laval
+
 def with_default(primary_value, default_value):
     """
     Return `primary_value` unless it's `None`.
